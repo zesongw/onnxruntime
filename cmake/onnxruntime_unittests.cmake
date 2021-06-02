@@ -459,6 +459,10 @@ if(onnxruntime_USE_COREML)
   endif()
 endif()
 
+if(onnxruntime_USE_WEBNN)
+  list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_webnn)
+endif()
+
 file(GLOB_RECURSE onnxruntime_test_tvm_src CONFIGURE_DEPENDS
   "${TEST_SRC_DIR}/tvm/*.h"
   "${TEST_SRC_DIR}/tvm/*.cc"
@@ -497,6 +501,7 @@ set(ONNXRUNTIME_TEST_LIBS
     ${PROVIDERS_ARMNN}
     ${PROVIDERS_ROCM}
     ${PROVIDERS_COREML}
+    ${PROVIDERS_WEBNN}
     onnxruntime_optimizer
     onnxruntime_providers
     onnxruntime_util
@@ -551,6 +556,12 @@ if(onnxruntime_USE_COREML)
   endif()
 endif()
 
+if(onnxruntime_USE_WEBNN)
+  list(APPEND onnxruntime_test_framework_src_patterns  ${TEST_SRC_DIR}/providers/webnn/*)
+  list(APPEND onnxruntime_test_framework_libs onnxruntime_providers_webnn)
+  list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_webnn)
+  list(APPEND onnxruntime_test_providers_libs onnxruntime_providers_webnn)
+endif()
 
 if(WIN32)
   if (onnxruntime_USE_TVM)
