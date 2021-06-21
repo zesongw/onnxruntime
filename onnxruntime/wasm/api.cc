@@ -5,6 +5,10 @@
 
 #include "core/session/onnxruntime_cxx_api.h"
 
+#ifdef USE_WEBNN
+#include "core/providers/webnn/webnn_provider_factory.h"
+#endif
+
 #include <iostream>
 #include <vector>
 
@@ -114,6 +118,11 @@ OrtSessionOptions* OrtCreateSessionOptions(size_t graph_optimization_level,
 #endif
 
   return session_options;
+}
+
+int OrtSessionOptionsAppendExecutionProviderWebNN(OrtSessionOptions* session_options,
+                                                  const unsigned int webnn_flags) {
+  return CheckStatus(OrtSessionOptionsAppendExecutionProvider_WebNN(session_options, webnn_flags));
 }
 
 int OrtAddSessionConfigEntry(OrtSessionOptions* session_options,
