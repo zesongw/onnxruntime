@@ -9,6 +9,7 @@
 #include "op_builder_factory.h"
 
 #include "core/common/safeint.h"
+#include "core/framework/tensorprotoutils.h"
 #include "core/providers/common.h"
 #include "core/providers/shared/utils/utils.h"
 
@@ -123,11 +124,13 @@ Status ModelBuilder::RegisterInitializers() {
 
     auto data_type = tensor.data_type();
     if (data_type == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
-      const float* data = GetTensorFloatData(tensor);
+      unpacked_tensors_.push_back({});
+      std::vector<uint8_t>& unpacked_tensor = unpacked_tensors_.back();
+      ORT_RETURN_IF_ERROR(onnxruntime::utils::UnpackInitializerData(tensor, unpacked_tensor));
       auto num_elements = SafeInt<size_t>(Product(tensor.dims()));
       desc.type = ::ml::OperandType::Float32;
       ml::ArrayBufferView bufferView;
-      bufferView.buffer = const_cast<float*>(data);
+      bufferView.buffer = reinterpret_cast<float*>(unpacked_tensor.data());
       bufferView.byteLength = num_elements * sizeof(float);
       operands_[name] = builder_.Constant(&desc, &bufferView);
     } else {

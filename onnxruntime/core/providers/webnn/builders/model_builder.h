@@ -50,6 +50,7 @@ class ModelBuilder {
   uint32_t flags_;
 
   ::ml::GraphBuilder builder_;
+  std::vector<std::vector<uint8_t>> unpacked_tensors_;
   std::unordered_map<std::string, ::ml::Operand> operands_;
   std::vector<std::string> input_names_;
   std::vector<std::string> output_names_;
