@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "core/providers/common.h"
+#include "core/providers/shared/utils/utils.h"
 #include "core/providers/webnn/builders/model_builder.h"
 #include "core/providers/webnn/builders/op_builder_factory.h"
 
@@ -38,6 +39,16 @@ Status ActivationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     } else {
       output = model_builder.GetBuilder().Relu(input);
     }
+  } else if (op_type == "LeakyRelu") {
+    if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
+      LOGS_DEFAULT(VERBOSE) << "LeakyRelu Node [" << node.Name() << "] fused";
+      output = input;
+    } else {
+      NodeAttrHelper helper(node);
+      ml::LeakyReluOptions options;
+      options.alpha = helper.Get("alpha", (float)0.0);
+      output = model_builder.GetBuilder().LeakyRelu(input, &options);
+    }
   } else {
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                            "ActivationOpBuilder::AddToModelBuilderImpl, unknown op: ", op_type);
@@ -61,6 +72,7 @@ void CreateActivationOpBuilder(const std::string& op_type, OpBuilderRegistration
   static std::vector<std::string> op_types =
       {
           "Relu",
+          "LeakyRelu"
       };
 
   op_registrations.builders.push_back(std::make_unique<ActivationOpBuilder>());

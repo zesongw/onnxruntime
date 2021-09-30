@@ -96,6 +96,11 @@ void ModelBuilder::PreprocessActivations() {
 
     if (op_type == "Relu") {
       activation_nodes_.emplace(node->Index(), builder_.ReluOperator());
+    } else if (op_type == "LeakyRelu") {
+      NodeAttrHelper helper(*node);
+      ml::LeakyReluOptions options;
+      options.alpha = helper.Get("alpha", (float)0.0);
+      activation_nodes_.emplace(node->Index(), builder_.LeakyReluOperator(&options));
     }
   }
 }
