@@ -175,9 +175,12 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
     } else {
       dims.reserve(shape.size());
       for (const auto& dim : shape) {
-        ORT_RETURN_IF_NOT(dim.has_dim_value(),
-                          "Dynamic shape is not supported yet, for ", input_output_type, ": ", name);
-        dims.push_back(SafeInt<int32_t>(dim.dim_value()));
+        if (!dim.has_dim_value()) {
+          // FIXME: support dyanmic shape
+          dims.push_back(1);
+        } else {
+          dims.push_back(SafeInt<int32_t>(dim.dim_value()));
+        }
       }
     }
   }

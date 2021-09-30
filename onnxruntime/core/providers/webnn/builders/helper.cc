@@ -48,10 +48,9 @@ bool IsInputSupported(const NodeArg& input, const std::string& parent_name, cons
   }
 
   for (const auto& dim : shape_proto->dim()) {
-    // For now we do not support dynamic shape
+    // For now we workaround dynamic shape support by assuming 1
     if (!dim.has_dim_value()) {
-      LOGS(logger, WARNING) << "Dynamic shape is not supported for now, for input:" << input_name;
-      return false;
+      LOGS(logger, VERBOSE) << "Dynamic shape is not supported for now, assume to be 1, for input:" << input_name;
     }
   }
 
