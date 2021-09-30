@@ -27,6 +27,10 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
     CreateBatchNormalizationOpBuilder("BatchNormalization", op_registrations);
   }
 
+  {  // Clip
+    CreateClipOpBuilder("Clip", op_registrations);
+  }
+
   {  // Conv
     CreateConvOpBuilder("Conv", op_registrations);
   }
