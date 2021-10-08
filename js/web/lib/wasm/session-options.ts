@@ -117,11 +117,21 @@ export const setSessionOptions = (options?: InferenceSession.SessionOptions): [n
     }
 
     if (options?.executionProviders) {
-      const eps = options.executionProviders;
-      const epsNames = eps.map(i => typeof i === 'string' ? i : i.name);
-      if (epsNames.indexOf('webnn') !== -1) {
-        if (wasm._OrtSessionOptionsAppendExecutionProviderWebNN(sessionOptionsHandle, 0) !== 0) {
-          throw new Error(`Can't append WebNN execution provider`);
+      for (const ep of options.executionProviders) {
+        const name = typeof ep === 'string' ? ep : ep.name;
+        if (name === 'webnn') {
+          let devicePreference = 0;
+          if (typeof ep !== 'string') {
+            const webnnOptions = ep as InferenceSession.WebNNExecutionProviderOption;
+            if (webnnOptions?.devicePreference) {
+              devicePreference = webnnOptions.devicePreference;
+            }
+          }
+          console.log(`webnn device preference: ${devicePreference}`);
+          if (wasm._OrtSessionOptionsAppendExecutionProviderWebNN(sessionOptionsHandle, devicePreference) !== 0) {
+            throw new Error(`Can't append WebNN execution provider`);
+          }
+          break;
         }
       }
     }

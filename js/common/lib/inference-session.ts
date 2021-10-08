@@ -164,6 +164,7 @@ export declare namespace InferenceSession {
     cuda: CudaExecutionProviderOption;
     wasm: WebAssemblyExecutionProviderOption;
     webgl: WebGLExecutionProviderOption;
+    webnn: WebNNExecutionProviderOption;
   }
 
   type ExecutionProviderName = keyof ExecutionProviderOptionMap;
@@ -188,6 +189,10 @@ export declare namespace InferenceSession {
   export interface WebGLExecutionProviderOption extends ExecutionProviderOption {
     readonly name: 'webgl';
     // TODO: add flags
+  }
+  export interface WebNNExecutionProviderOption extends ExecutionProviderOption {
+    readonly name: 'webnn';
+    devicePreference?: number;  // 0 - default, 1 - gpu, 2 - cpu
   }
   //#endregion
 
