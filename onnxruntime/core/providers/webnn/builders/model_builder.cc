@@ -12,6 +12,7 @@
 #include "core/framework/tensorprotoutils.h"
 #include "core/providers/common.h"
 #include "core/providers/shared/utils/utils.h"
+#include "core/providers/webnn/webnn_provider_factory.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -33,12 +34,20 @@ ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logge
 
 Status ModelBuilder::Initialize() {
   // Create WebNN context and graph builder
+  MLContextOptions options;
+  options.devicePreference = MLDevicePreference_Default;
+  options.powerPreference = MLPowerPreference_Default;
+  if (flags_ == WEBNN_FLAG_USE_GPU) {
+    options.devicePreference = MLDevicePreference_Gpu;
+  } else if (flags_ == WEBNN_FLAG_USE_CPU) {
+    options.devicePreference = MLDevicePreference_Cpu;
+  }
 #ifdef __EMSCRIPTEN__
-  ::ml::Context context = emscripten_webnn_create_context();
+  ::ml::Context context = emscripten_webnn_create_context(&options);
 #else
   WebnnProcTable backendProcs = webnn_native::GetProcs();
   webnnProcSetProcs(&backendProcs);
-  ::ml::Context context = ml::Context(webnn_native::CreateContext());
+  ::ml::Context context = ml::Context(webnn_native::CreateContext(&options));
 #endif
   if (!context) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to create WebNN context.");
