@@ -27,6 +27,7 @@ void CreateConcatOpBuilder(const std::string& op_type, OpBuilderRegistrations& o
 void CreateGemmOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);
 void CreatePoolOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);
 void CreateReshapeOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);
+void CreateTransposeOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);
 
 }  // namespace webnn
 }  // namespace onnxruntime
