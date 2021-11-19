@@ -55,6 +55,10 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
     CreateReshapeOpBuilder("Reshape", op_registrations);
   }
 
+  {  // Resize
+    CreateResizeOpBuilder("Resize", op_registrations);
+  }
+
   {  // Transpose
     CreateTransposeOpBuilder("Transpose", op_registrations);
   }

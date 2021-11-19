@@ -42,7 +42,7 @@ Status TransposeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   std::vector<int32_t> permutation;
   std::transform(perm.cbegin(), perm.cend(),
                  std::back_inserter(permutation),
-                 [](int64_t dim) -> uint32_t { return SafeInt<int32_t>(dim); });
+                 [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
   options.permutationCount = SafeInt<uint32_t>(permutation.size());
   options.permutation = permutation.data();
   ::ml::Operand output = model_builder.GetBuilder().Transpose(input, &options);
