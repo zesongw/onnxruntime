@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+#include "core/providers/common.h"
 #include "core/providers/webnn/builders/model_builder.h"
 #include "core/providers/webnn/builders/op_builder_factory.h"
 #include "core/providers/shared/utils/utils.h"
@@ -47,7 +48,13 @@ Status ClipOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   ORT_RETURN_IF_NOT(GetClipMinMax(model_builder.GetInitializerTensors(), node, clamp_options.minValue, clamp_options.maxValue, logger), "GetClipMinMax failed");
 
   ::ml::Operand input = model_builder.GetOperand(input_name);
-  ::ml::Operand output = model_builder.GetBuilder().Clamp(input, &clamp_options);
+  ::ml::Operand output;
+  if (Contains(model_builder.GetFusedActivations(), input_name)) {
+    LOGS_DEFAULT(VERBOSE) << "Clip Node [" << node.Name() << "] fused";
+    output = input;
+  } else { 
+    output = model_builder.GetBuilder().Clamp(input, &clamp_options);
+  }
 
   model_builder.AddOperand(output_name, std::move(output));
   return Status::OK();

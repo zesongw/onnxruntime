@@ -110,6 +110,10 @@ void ModelBuilder::PreprocessActivations() {
       ml::LeakyReluOptions options;
       options.alpha = helper.Get("alpha", (float)0.0);
       activation_nodes_.emplace(node->Index(), builder_.LeakyReluOperator(&options));
+    } else if (op_type == "Clip") {
+      ml::ClampOptions clamp_options;
+      GetClipMinMax(GetInitializerTensors(), *node, clamp_options.minValue, clamp_options.maxValue, logger_);
+      activation_nodes_.emplace(node->Index(), builder_.ClampOperator(&clamp_options));
     }
   }
 }
