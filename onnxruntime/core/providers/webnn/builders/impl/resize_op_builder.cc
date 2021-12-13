@@ -102,7 +102,7 @@ void ResizeOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const N
 Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                               const Node& node,
                                               const logging::Logger& logger) const {
-  ::ml::ResampleOptions options;
+  ::ml::Resample2dOptions options;
   NodeAttrHelper helper(node);
   const auto mode = helper.Get("mode", "nearest");
   if (mode == "linear") {
@@ -116,10 +116,13 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
 
   std::vector<float> scales;
   std::vector<int32_t> sizes;
+  std::vector<float> scales_hw;
+  std::vector<int32_t> sizes_hw;
   if (input_defs.size() == 3) {  // use scales
     ORT_RETURN_IF_NOT(GetResizeScales(initializers, node, scales, logger), "Error getting resize scales");
-    options.scalesCount = SafeInt<uint32_t>(scales.size());
-    options.scales = scales.data();
+    scales_hw = {scales[2], scales[3]};
+    options.scalesCount = SafeInt<uint32_t>(scales_hw.size());
+    options.scales = scales_hw.data();
   } else {  // we already checked number of inputs in IsOpSupportedImpl
     std::vector<int64_t> output_sizes;
     ORT_RETURN_IF_NOT(GetResizeOutputSizes(initializers, node, output_sizes, logger),
@@ -127,12 +130,16 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     std::transform(output_sizes.cbegin(), output_sizes.cend(),
                  std::back_inserter(sizes),
                  [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
-    options.sizesCount = SafeInt<uint32_t>(sizes.size());
-    options.sizes = sizes.data();
+    sizes_hw = {sizes[2], sizes[3]};
+    options.sizesCount = SafeInt<uint32_t>(sizes_hw.size());
+    options.sizes = sizes_hw.data();
   }
 
+  std::vector<int32_t> axes = {2, 3};
+  options.axesCount = SafeInt<uint32_t>(axes.size());
+  options.axes = axes.data();
   ::ml::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::ml::Operand output = model_builder.GetBuilder().Resample(input, &options);
+  ::ml::Operand output = model_builder.GetBuilder().Resample2d(input, &options);
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }
