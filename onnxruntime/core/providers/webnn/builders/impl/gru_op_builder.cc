@@ -79,11 +79,10 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
     std::vector<uint32_t> splits = {2};
     ::ml::SplitOptions splitOptions;
     splitOptions.axis = 1;
-    ::ml::OperandArray splittedOperands = model_builder.GetBuilder().Split(biasOperand, splits.data(), splits.size(), &splitOptions);
-    ::ml::Operand bias = splittedOperands.Get(0);
-    ::ml::Operand recurrentBias = splittedOperands.Get(1);
-    options.bias = bias;
-    options.recurrentBias = recurrentBias;
+    ::ml::OperandArray splittedOperands = model_builder.GetBuilder().Split(biasOperand, splits.data(),
+                                                                           static_cast<uint32_t>(splits.size()), &splitOptions);
+    options.bias = splittedOperands.Get(0);
+    options.recurrentBias = splittedOperands.Get(1);
   }
 
   // Add initialHiddenState if present
