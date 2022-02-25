@@ -329,7 +329,7 @@ OnnxRuntimeTestSession::OnnxRuntimeTestSession(Ort::Env& env, std::random_device
 #endif
   } else if (provider_name == onnxruntime::kWebNNExecutionProvider) {
 #ifdef USE_WEBNN
-    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_WebNN(session_options, 0));
+    Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_WebNN(session_options, 0, 0));
 #else
     ORT_THROW("WEBNN is not supported in this build\n");
 #endif

@@ -54,7 +54,7 @@ IExecutionProvider* TestCoreMLExecutionProvider(uint32_t coreml_flags);
 #endif
 
 #ifdef USE_WEBNN
-IExecutionProvider* TestWebNNExecutionProvider(uint32_t webnn_flags);
+IExecutionProvider* TestWebNNExecutionProvider(uint32_t webnn_device_flags, uint32_t webnn_power_flags);
 #endif
 
 template <typename T>

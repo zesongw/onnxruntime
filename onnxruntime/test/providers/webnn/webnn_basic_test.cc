@@ -28,8 +28,10 @@ using namespace ::onnxruntime::logging;
 namespace onnxruntime {
 namespace test {
 
-// We want to run UT on CPU only to get output value without losing precision to pass the verification
-static constexpr uint32_t s_webnn_flags = WEBNN_FLAG_USE_CPU;
+// We want to run UT on CPU and low-power perference only to get output value without
+// losing precision to pass the verification
+static constexpr uint32_t s_webnn_device_flags = WEBNN_DEVICE_FLAG_USE_CPU;
+static constexpr uint32_t s_webnn_power_flags = WEBNN_POWER_FLAG_USE_LOW_POWER;
 
 #if !defined(ORT_MINIMAL_BUILD)
 
@@ -75,13 +77,13 @@ TEST(WebNNExecutionProviderTest, FunctionTest) {
   std::vector<float> values_mul_x = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f};
   OrtValue ml_value_x;
 
-  CreateMLValue<float>(TestWebNNExecutionProvider(s_webnn_flags)->GetAllocator(0, OrtMemTypeDefault),
+  CreateMLValue<float>(TestWebNNExecutionProvider(s_webnn_device_flags, s_webnn_power_flags)->GetAllocator(0, OrtMemTypeDefault),
                        dims_mul_x, values_mul_x, &ml_value_x);
   OrtValue ml_value_y;
-  CreateMLValue<float>(TestWebNNExecutionProvider(s_webnn_flags)->GetAllocator(0, OrtMemTypeDefault),
+  CreateMLValue<float>(TestWebNNExecutionProvider(s_webnn_device_flags, s_webnn_power_flags)->GetAllocator(0, OrtMemTypeDefault),
                        dims_mul_x, values_mul_x, &ml_value_y);
   OrtValue ml_value_z;
-  CreateMLValue<float>(TestWebNNExecutionProvider(s_webnn_flags)->GetAllocator(0, OrtMemTypeDefault),
+  CreateMLValue<float>(TestWebNNExecutionProvider(s_webnn_device_flags, s_webnn_power_flags)->GetAllocator(0, OrtMemTypeDefault),
                        dims_mul_x, values_mul_x, &ml_value_z);
 
   NameMLValMap feeds;
@@ -90,7 +92,7 @@ TEST(WebNNExecutionProviderTest, FunctionTest) {
   feeds.insert(std::make_pair("Z", ml_value_z));
 
   RunAndVerifyOutputsWithEP(model_file_name, "WebNNExecutionProviderTest.FunctionTest",
-                            std::make_unique<WebNNExecutionProvider>(s_webnn_flags),
+                            std::make_unique<WebNNExecutionProvider>(s_webnn_device_flags, s_webnn_power_flags),
                             feeds);
 }
 
@@ -111,7 +113,7 @@ TEST(WebNNExecutionProviderTest, TestOrtFormatModel) {
   feeds.insert(std::make_pair("Input3", ml_value));
 
   RunAndVerifyOutputsWithEP(model_file_name, "WebNNExecutionProviderTest.TestOrtFormatModel",
-                            std::make_unique<WebNNExecutionProvider>(s_webnn_flags),
+                            std::make_unique<WebNNExecutionProvider>(s_webnn_device_flags, s_webnn_power_flags),
                             feeds);
 }
 

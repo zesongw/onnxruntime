@@ -121,9 +121,9 @@ OrtSessionOptions* OrtCreateSessionOptions(size_t graph_optimization_level,
 }
 
 int OrtSessionOptionsAppendExecutionProviderWebNN(OrtSessionOptions* session_options,
-                                                  const unsigned int webnn_flags) {
+                                                  const unsigned int webnn_device_flags, const unsigned int webnn_power_flags) {
 #ifdef USE_WEBNN
-  return CheckStatus(OrtSessionOptionsAppendExecutionProvider_WebNN(session_options, webnn_flags));
+  return CheckStatus(OrtSessionOptionsAppendExecutionProvider_WebNN(session_options, webnn_device_flags, webnn_power_flags));
 #else
   std::cerr << "WebNN is not enabled." << std::endl;
   return ORT_EP_FAIL;
