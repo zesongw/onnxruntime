@@ -182,20 +182,6 @@ bool GruOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, c
       LOGS(logger, VERBOSE) << "Gru: a list of 4 activation functions must be bidirectional direction.";
       return false;
     }
-
-    // linear_before_reset = true is not supported in WebNN at present
-    const auto linear_before_reset = helper.Get("linear_before_reset", static_cast<int32_t>(0));
-    if (linear_before_reset) {
-      LOGS(logger, VERBOSE) << "Gru unsupported linear_before_reset = true.";
-      return false;
-    }
-
-    // 'layout = rzn' is not supported in WebNN at present
-    const auto layout = helper.Get("layout", static_cast<int32_t>(0));
-    if (layout == 1) {
-      LOGS(logger, VERBOSE) << "Gru unsupported layout = 1, i.e. 'rzn' layout.";
-      return false;
-    }
   }
 
   return true;
