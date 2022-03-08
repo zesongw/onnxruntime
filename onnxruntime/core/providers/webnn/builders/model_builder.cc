@@ -26,10 +26,12 @@
 namespace onnxruntime {
 namespace webnn {
 
-ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger, uint32_t flags)
+ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger,
+                           uint32_t device_flags, uint32_t power_flags)
     : graph_viewer_(graph_viewer),
       logger_(logger),
-      flags_(flags) {
+      device_flags_(device_flags),
+      power_flags_(power_flags) {
 }
 
 Status ModelBuilder::Initialize() {
@@ -37,11 +39,17 @@ Status ModelBuilder::Initialize() {
   MLContextOptions options;
   options.devicePreference = MLDevicePreference_Default;
   options.powerPreference = MLPowerPreference_Default;
-  if (flags_ == WEBNN_FLAG_USE_GPU) {
+  if (device_flags_ == WEBNN_DEVICE_FLAG_USE_GPU) {
     options.devicePreference = MLDevicePreference_Gpu;
-  } else if (flags_ == WEBNN_FLAG_USE_CPU) {
+  } else if (device_flags_ == WEBNN_DEVICE_FLAG_USE_CPU) {
     options.devicePreference = MLDevicePreference_Cpu;
   }
+  if (power_flags_ == WEBNN_POWER_FLAG_USE_HIGH_PERFORMANCE) {
+    options.powerPreference = MLPowerPreference_High_performance;
+  } else if (power_flags_ == WEBNN_POWER_FLAG_USE_LOW_POWER) {
+    options.powerPreference = MLPowerPreference_Low_power;
+  }
+
 #ifdef __EMSCRIPTEN__
   ::ml::Context context = emscripten_webnn_create_context(&options);
 #else
@@ -290,7 +298,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   if (!graph) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to build WebNN graph.");
   }
-  model.reset(new Model(std::move(graph), logger_, flags_));
+  model.reset(new Model(std::move(graph), logger_, device_flags_, power_flags_));
   model->SetInputs(std::move(input_names_));
   model->SetOutputs(std::move(output_names_));
   model->SetScalarOutputs(std::move(scalar_outputs_));

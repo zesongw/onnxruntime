@@ -48,7 +48,8 @@ class Model {
  private:
   ::ml::Graph graph_;
   const logging::Logger& logger_;
-  uint32_t flags_;
+  uint32_t device_flags_;
+  uint32_t power_flags_;
 
   std::unordered_map<std::string, ::ml::Input> ml_inputs_;
   std::unordered_map<std::string, ::ml::ArrayBufferView> ml_outputs_;
@@ -62,7 +63,7 @@ class Model {
 
   OrtMutex mutex_;
 
-  Model(const ::ml::Graph& path, const logging::Logger& logger, uint32_t flags);
+  Model(const ::ml::Graph& path, const logging::Logger& logger, uint32_t device_flags, uint32_t power_flags);
 
   void SetInputOutputInfo(std::unordered_map<std::string, OnnxTensorInfo>&& input_output_info) {
     input_output_info_ = std::move(input_output_info);

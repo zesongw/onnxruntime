@@ -155,10 +155,12 @@ std::unique_ptr<IExecutionProvider> DefaultCoreMLExecutionProvider() {
 
 std::unique_ptr<IExecutionProvider> DefaultWebNNExecutionProvider() {
 #if defined(USE_WEBNN)
-  // We want to run UT on CPU only to get output value without losing precision
-  uint32_t webnn_flags = 0;
-  webnn_flags |= WEBNN_FLAG_USE_CPU;
-  return CreateExecutionProviderFactory_WebNN(webnn_flags)->CreateProvider();
+  // We want to run UT on CPU and low-power preference only to get output value without losing precision
+  uint32_t webnn_device_flags = 0;
+  uint32_t webnn_power_flags = 0;
+  webnn_device_flags |= WEBNN_DEVICE_FLAG_USE_CPU;
+  webnn_power_flags |= WEBNN_POWER_FLAG_USE_LOW_POWER;
+  return CreateExecutionProviderFactory_WebNN(webnn_device_flags, webnn_power_flags)->CreateProvider();
 #else
   return nullptr;
 #endif

@@ -16,7 +16,7 @@ class IOpBuilder;
 
 class ModelBuilder {
  public:
-  ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger, uint32_t flags);
+  ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger, uint32_t device_flags, uint32_t power_flags);
   ~ModelBuilder() = default;
 
   Status Compile(std::unique_ptr<Model>& model) ORT_MUST_USE_RESULT;
@@ -47,7 +47,8 @@ class ModelBuilder {
  private:
   const GraphViewer& graph_viewer_;
   const logging::Logger& logger_;
-  uint32_t flags_;
+  uint32_t device_flags_;
+  uint32_t power_flags_;
 
   ::ml::GraphBuilder builder_;
   std::vector<std::vector<uint8_t>> unpacked_tensors_;

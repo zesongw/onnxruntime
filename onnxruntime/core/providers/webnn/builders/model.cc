@@ -17,8 +17,12 @@
 namespace onnxruntime {
 namespace webnn {
 
-Model::Model(const ::ml::Graph& graph, const logging::Logger& logger, uint32_t flags)
-    : graph_(graph), logger_(logger), flags_(flags) {
+Model::Model(const ::ml::Graph& graph, const logging::Logger& logger,
+             uint32_t device_flags, uint32_t power_flags)
+    : graph_(graph),
+      logger_(logger),
+      device_flags_(device_flags),
+      power_flags_(power_flags) {
 }
 
 Model::~Model() {}

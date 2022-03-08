@@ -21,7 +21,7 @@ std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_OpenVI
 std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_OpenVINO(const OrtOpenVINOProviderOptions* params);
 std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_Rknpu();
 std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_Tensorrt(const OrtTensorRTProviderOptions* params);
-std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_WebNN(uint32_t);
+std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_WebNN(uint32_t webnn_device_flags, uint32_t webnn_power_flags);
 
 // EP for internal testing
 std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_InternalTesting(const std::unordered_set<std::string>& supported_ops);

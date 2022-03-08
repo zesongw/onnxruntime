@@ -380,7 +380,7 @@ int real_main(int argc, char* argv[], Ort::Env& env) {
     }
     if (enable_webnn) {
 #ifdef USE_WEBNN
-      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_WebNN(sf, 0));
+      Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_WebNN(sf, 0, 0));
 #else
       fprintf(stderr, "WebNN is not supported in this build");
       return -1;

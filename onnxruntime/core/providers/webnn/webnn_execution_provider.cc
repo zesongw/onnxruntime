@@ -18,9 +18,9 @@ namespace onnxruntime {
 
 constexpr const char* WEBNN = "WebNN";
 
-WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_flags)
+WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_device_flags, uint32_t webnn_power_flags)
     : IExecutionProvider{onnxruntime::kWebNNExecutionProvider, true},
-      webnn_flags_(webnn_flags) {
+      webnn_device_flags_(webnn_device_flags), webnn_power_flags_(webnn_power_flags) {
   AllocatorCreationInfo device_info(
       [](int) {
         return std::make_unique<CPUAllocator>(OrtMemoryInfo(WEBNN, OrtAllocatorType::OrtDeviceAllocator));
@@ -182,7 +182,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
     Node& fused_node = fused_node_and_graph.fused_node;
     const onnxruntime::GraphViewer& graph_viewer(fused_node_and_graph.filtered_graph);
 
-    webnn::ModelBuilder builder(graph_viewer, *GetLogger(), webnn_flags_);
+    webnn::ModelBuilder builder(graph_viewer, *GetLogger(), webnn_device_flags_, webnn_power_flags_);
     std::unique_ptr<webnn::Model> model;
     ORT_RETURN_IF_ERROR(builder.Compile(model));
     models_.emplace(fused_node.Name(), std::move(model));

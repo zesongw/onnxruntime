@@ -13,7 +13,7 @@ class Model;
 
 class WebNNExecutionProvider : public IExecutionProvider {
  public:
-  WebNNExecutionProvider(uint32_t webnn_flags);
+  WebNNExecutionProvider(uint32_t webnn_device_flags, uint32_t webnn_power_flags);
   virtual ~WebNNExecutionProvider();
 
   std::vector<std::unique_ptr<ComputeCapability>>
@@ -32,8 +32,10 @@ class WebNNExecutionProvider : public IExecutionProvider {
 
  private:
   // The bit flags which define bool options for WEBNN EP, bits are defined as
-  // WEBNNFlags in include/onnxruntime/core/providers/webnn/webnn_provider_factory.h
-  const uint32_t webnn_flags_;
+  // WebNNDeviceFlags and WebNNPowerFlags in
+  // include/onnxruntime/core/providers/webnn/webnn_provider_factory.h
+  const uint32_t webnn_device_flags_;
+  const uint32_t webnn_power_flags_;
 
   std::unordered_map<std::string, std::unique_ptr<onnxruntime::webnn::Model>> models_;
 };
