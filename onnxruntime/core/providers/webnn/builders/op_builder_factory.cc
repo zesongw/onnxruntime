@@ -36,6 +36,7 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
 
   {  // Conv
     CreateConvOpBuilder("Conv", op_registrations);
+    CreateConvOpBuilder("ConvTranspose", op_registrations);
   }
 
   {  // Concat

@@ -116,7 +116,7 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
   auto activationOperators = ::ml::CreateOperatorArray();
   const auto activations = helper.Get("activations", std::vector<std::string>{"Sigmod", "Tanh"});
   for (auto activation : activations) {
-    ml::Operator activationOperator;
+    ml::FusionOperator activationOperator;
     if (activation == "Relu") {
       activationOperator = model_builder.GetBuilder().ReluOperator();
     } else if (activation == "Sigmoid") {

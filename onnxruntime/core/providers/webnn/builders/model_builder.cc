@@ -36,26 +36,30 @@ ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logge
 
 Status ModelBuilder::Initialize() {
   // Create WebNN context and graph builder
-  MLContextOptions options;
-  options.devicePreference = MLDevicePreference_Default;
-  options.powerPreference = MLPowerPreference_Default;
+  ::ml::ContextOptions options;
+  options.devicePreference = ::ml::DevicePreference::Default;
+  options.powerPreference = ::ml::PowerPreference::Default;
   if (device_flags_ == WEBNN_DEVICE_FLAG_USE_GPU) {
-    options.devicePreference = MLDevicePreference_Gpu;
+    options.devicePreference = ::ml::DevicePreference::Gpu;
   } else if (device_flags_ == WEBNN_DEVICE_FLAG_USE_CPU) {
-    options.devicePreference = MLDevicePreference_Cpu;
+    options.devicePreference = ::ml::DevicePreference::Cpu;
   }
   if (power_flags_ == WEBNN_POWER_FLAG_USE_HIGH_PERFORMANCE) {
-    options.powerPreference = MLPowerPreference_High_performance;
+    options.powerPreference = ::ml::PowerPreference::High_performance;
   } else if (power_flags_ == WEBNN_POWER_FLAG_USE_LOW_POWER) {
-    options.powerPreference = MLPowerPreference_Low_power;
+    options.powerPreference = ::ml::PowerPreference::Low_power;
   }
 
 #ifdef __EMSCRIPTEN__
   ::ml::Context context = emscripten_webnn_create_context(&options);
 #else
+  std::unique_ptr<webnn_native::Instance> instance;
+  instance = std::make_unique<webnn_native::Instance>();
   WebnnProcTable backendProcs = webnn_native::GetProcs();
   webnnProcSetProcs(&backendProcs);
-  ::ml::Context context = ml::Context(webnn_native::CreateContext(&options));
+  ::ml::Context context = instance->CreateContext(&options);
+
+
 #endif
   if (!context) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to create WebNN context.");
@@ -306,8 +310,8 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   return Status::OK();
 }
 
-::ml::Operator ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
-  ::ml::Operator fused_op;
+::ml::FusionOperator ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
+  ::ml::FusionOperator fused_op;
 
   for (auto it = node.OutputEdgesBegin(), end = node.OutputEdgesEnd(); it != end; ++it) {
     const auto& dst_node = it->GetNode();
@@ -320,7 +324,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
       // if there is any other non-relu node using the output
       // will add relu separately
       if (&output == dst_input)
-        return ::ml::Operator();
+        return ::ml::FusionOperator();
     }
   }
 
@@ -328,7 +332,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   if (fused_op != nullptr) {
     for (const auto* graph_output : graph_viewer_.GetOutputs()) {
       if (&output == graph_output)
-        return ::ml::Operator();
+        return ::ml::FusionOperator();
     }
 
     LOGS_DEFAULT(VERBOSE) << "Node [" << node.Name() << "] type [" << node.OpType()
