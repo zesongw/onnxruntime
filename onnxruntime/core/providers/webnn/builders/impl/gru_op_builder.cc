@@ -49,11 +49,11 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
   const auto& initializers(model_builder.GetInitializerTensors());
   NodeAttrHelper helper(node);
 
-  ::ml::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::ml::Operand weight = model_builder.GetOperand(input_defs[1]->Name());
-  ::ml::Operand recurrentWeight = model_builder.GetOperand(input_defs[2]->Name());
-  ::ml::GruOptions options;
-  ::ml::OperandArray output;
+  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
+  ::wnn::Operand weight = model_builder.GetOperand(input_defs[1]->Name());
+  ::wnn::Operand recurrentWeight = model_builder.GetOperand(input_defs[2]->Name());
+  ::wnn::GruOptions options;
+  ::wnn::OperandArray output;
 
   std::vector<int64_t> input_shape;
   ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
@@ -75,11 +75,11 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
   // Add bias, recurrentBias if present
   if (input_defs.size() > 3 && Contains(initializers, input_defs[3]->Name())) {
     // ONNX's bias should be splited in half for WebNN Gru's bias and recurrentBias options
-    ::ml::Operand biasOperand = model_builder.GetOperand(input_defs[3]->Name());
+    ::wnn::Operand biasOperand = model_builder.GetOperand(input_defs[3]->Name());
     std::vector<uint32_t> splits = {2};
-    ::ml::SplitOptions splitOptions;
+    ::wnn::SplitOptions splitOptions;
     splitOptions.axis = 1;
-    ::ml::OperandArray splittedOperands = model_builder.GetBuilder().Split(biasOperand, splits.data(),
+    ::wnn::OperandArray splittedOperands = model_builder.GetBuilder().Split(biasOperand, splits.data(),
                                                                            static_cast<uint32_t>(splits.size()), &splitOptions);
     options.bias = splittedOperands.Get(0);
     options.recurrentBias = splittedOperands.Get(1);
@@ -87,7 +87,7 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
 
   // Add initialHiddenState if present
   if (input_defs.size() > 5) {
-    ::ml::Operand initialHiddenState = model_builder.GetOperand(input_defs[5]->Name());
+    ::wnn::Operand initialHiddenState = model_builder.GetOperand(input_defs[5]->Name());
     options.initialHiddenState = initialHiddenState;
   }
 
@@ -99,24 +99,24 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
   // direction, ONNX's direction: forward (default), reverse, or bidirectional.
   const auto direction = helper.Get("direction", "forward");
   if (direction == "reverse") {
-    options.direction = ::ml::RecurrentNetworkDirection::Backward;
+    options.direction = ::wnn::RecurrentNetworkDirection::Backward;
   } else if (direction == "bidirectional") {
-    options.direction = ::ml::RecurrentNetworkDirection::Both;
+    options.direction = ::wnn::RecurrentNetworkDirection::Both;
   } else {
-    options.direction = ::ml::RecurrentNetworkDirection::Forward;
+    options.direction = ::wnn::RecurrentNetworkDirection::Forward;
   }
   // layout
   const auto layout = helper.Get("layout", static_cast<int32_t>(0));
   if (layout == 1) {
-    options.layout = ::ml::RecurrentNetworkWeightLayout::Rzn;
+    options.layout = ::wnn::RecurrentNetworkWeightLayout::Rzn;
   }
 
   // Get ONNX's activations attribute, default is {"Sigmod", "Tanh"}
   // Only support "Relu", "Tanh", "Sigmoid" at present
-  auto activationOperators = ::ml::CreateOperatorArray();
+  auto activationOperators = ::wnn::CreateOperatorArray();
   const auto activations = helper.Get("activations", std::vector<std::string>{"Sigmod", "Tanh"});
   for (auto activation : activations) {
-    ml::FusionOperator activationOperator;
+    wnn::FusionOperator activationOperator;
     if (activation == "Relu") {
       activationOperator = model_builder.GetBuilder().ReluOperator();
     } else if (activation == "Sigmoid") {

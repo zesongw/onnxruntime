@@ -33,13 +33,13 @@ Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   const auto& input_defs = node.InputDefs();
   const size_t a_idx = 0, b_idx = 1, c_idx = 2;  // A*B+C
 
-  ::ml::Operand a = model_builder.GetOperand(node.InputDefs()[a_idx]->Name());
-  ::ml::Operand b = model_builder.GetOperand(node.InputDefs()[b_idx]->Name());
-  ::ml::Operand output;
+  ::wnn::Operand a = model_builder.GetOperand(node.InputDefs()[a_idx]->Name());
+  ::wnn::Operand b = model_builder.GetOperand(node.InputDefs()[b_idx]->Name());
+  ::wnn::Operand output;
   if (op_type == "MatMul") {
     output = model_builder.GetBuilder().Matmul(a, b);
   } else {  // Gemm
-    ::ml::GemmOptions options;
+    ::wnn::GemmOptions options;
     NodeAttrHelper helper(node);
     const auto transA = helper.Get("transA", 0);
     options.aTranspose = transA == 1;

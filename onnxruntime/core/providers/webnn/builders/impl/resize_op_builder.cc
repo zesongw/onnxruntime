@@ -102,13 +102,13 @@ void ResizeOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const N
 Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                               const Node& node,
                                               const logging::Logger& logger) const {
-  ::ml::Resample2dOptions options;
+  ::wnn::Resample2dOptions options;
   NodeAttrHelper helper(node);
   const auto mode = helper.Get("mode", "nearest");
   if (mode == "linear") {
-    options.mode = ::ml::InterpolationMode::Linear;
+    options.mode = ::wnn::InterpolationMode::Linear;
   } else {  // we already checked the mode must be NN or Bilinear in IsOpSupportedImpl
-    options.mode = ::ml::InterpolationMode::NearestNeighbor;
+    options.mode = ::wnn::InterpolationMode::NearestNeighbor;
   }
 
   const auto& input_defs = node.InputDefs();
@@ -138,8 +138,8 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   std::vector<int32_t> axes = {2, 3};
   options.axesCount = SafeInt<uint32_t>(axes.size());
   options.axes = axes.data();
-  ::ml::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::ml::Operand output = model_builder.GetBuilder().Resample2d(input, &options);
+  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
+  ::wnn::Operand output = model_builder.GetBuilder().Resample2d(input, &options);
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }
