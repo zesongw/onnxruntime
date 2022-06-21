@@ -45,7 +45,7 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
   options.dilations = dilations.data();
   options.dilationsCount = SafeInt<uint32_t>(dilations.size());
   options.groups = group;
-  options.inputLayout = ::ml::InputOperandLayout::Nchw;
+  options.inputLayout = ::wnn::InputOperandLayout::Nchw;
 
   // Add Padding
   // Usually using autopadding is more efficient than using explicit padding
@@ -61,9 +61,9 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
                                     auto_pad_type));
   if (AutoPadType::SAME_UPPER == auto_pad_type || AutoPadType::SAME_LOWER == auto_pad_type) {
     if (AutoPadType::SAME_LOWER == auto_pad_type) {  // default is SAME_UPPER
-      options.autoPad = ::ml::AutoPad::SameLower;
+      options.autoPad = ::wnn::AutoPad::SameLower;
     } else {
-      options.autoPad = ::ml::AutoPad::SameUpper;
+      options.autoPad = ::wnn::AutoPad::SameUpper;
     }
   } else {
     options.padding = pads.data();
@@ -85,9 +85,9 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
                                             const logging::Logger& logger) const {
   const auto& input_defs = node.InputDefs();
   const auto& op_type = node.OpType();
-  ::ml::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::ml::Operand filter = model_builder.GetOperand(input_defs[1]->Name());
-  ::ml::Operand output;
+  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
+  ::wnn::Operand filter = model_builder.GetOperand(input_defs[1]->Name());
+  ::wnn::Operand output;
 
   NodeAttrHelper helper(node);
   const auto strides = helper.Get("strides", std::vector<int32_t>{1, 1});
@@ -95,15 +95,15 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   const auto pads = helper.Get("pads", std::vector<int32_t>{0, 0, 0, 0});
 
   if (op_type == "Conv") {
-    ::ml::Conv2dOptions options;
+    ::wnn::Conv2dOptions options;
     ORT_RETURN_IF_ERROR(SetConvBaseOptions(model_builder, node, options, strides, dilations, pads, logger));
-    options.filterLayout = ::ml::Conv2dFilterOperandLayout::Oihw;
+    options.filterLayout = ::wnn::Conv2dFilterOperandLayout::Oihw;
 
     output = model_builder.GetBuilder().Conv2d(input, filter, &options);
   } else {
-    ::ml::ConvTranspose2dOptions options;
+    ::wnn::ConvTranspose2dOptions options;
     ORT_RETURN_IF_ERROR(SetConvBaseOptions(model_builder, node, options, strides, dilations, pads, logger));
-    options.filterLayout = ::ml::ConvTranspose2dFilterOperandLayout::Iohw;
+    options.filterLayout = ::wnn::ConvTranspose2dFilterOperandLayout::Iohw;
     // When the 'output_shape' is specificed, the 'output_padding' values
     // in options.outputPadding are ignored.
     std::vector<int32_t> output_shape;

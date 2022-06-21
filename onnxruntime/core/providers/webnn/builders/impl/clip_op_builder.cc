@@ -44,15 +44,15 @@ Status ClipOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                             const logging::Logger& logger) const {
   const auto& input_name = node.InputDefs()[0]->Name();
   const auto& output_name = node.OutputDefs()[0]->Name();
-  ml::ClampOptions clamp_options;
+  wnn::ClampOptions clamp_options;
   ORT_RETURN_IF_NOT(GetClipMinMax(model_builder.GetInitializerTensors(), node, clamp_options.minValue, clamp_options.maxValue, logger), "GetClipMinMax failed");
 
-  ::ml::Operand input = model_builder.GetOperand(input_name);
-  ::ml::Operand output;
+  ::wnn::Operand input = model_builder.GetOperand(input_name);
+  ::wnn::Operand output;
   if (Contains(model_builder.GetFusedActivations(), input_name)) {
     LOGS_DEFAULT(VERBOSE) << "Clip Node [" << node.Name() << "] fused";
     output = input;
-  } else { 
+  } else {
     output = model_builder.GetBuilder().Clamp(input, &clamp_options);
   }
 

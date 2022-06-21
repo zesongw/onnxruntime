@@ -36,28 +36,28 @@ ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logge
 
 Status ModelBuilder::Initialize() {
   // Create WebNN context and graph builder
-  ::ml::ContextOptions options;
-  options.devicePreference = ::ml::DevicePreference::Default;
-  options.powerPreference = ::ml::PowerPreference::Default;
+  ::wnn::ContextOptions options;
+  options.devicePreference = ::wnn::DevicePreference::Default;
+  options.powerPreference = ::wnn::PowerPreference::Default;
   if (device_flags_ == WEBNN_DEVICE_FLAG_USE_GPU) {
-    options.devicePreference = ::ml::DevicePreference::Gpu;
+    options.devicePreference = ::wnn::DevicePreference::Gpu;
   } else if (device_flags_ == WEBNN_DEVICE_FLAG_USE_CPU) {
-    options.devicePreference = ::ml::DevicePreference::Cpu;
+    options.devicePreference = ::wnn::DevicePreference::Cpu;
   }
   if (power_flags_ == WEBNN_POWER_FLAG_USE_HIGH_PERFORMANCE) {
-    options.powerPreference = ::ml::PowerPreference::High_performance;
+    options.powerPreference = ::wnn::PowerPreference::High_performance;
   } else if (power_flags_ == WEBNN_POWER_FLAG_USE_LOW_POWER) {
-    options.powerPreference = ::ml::PowerPreference::Low_power;
+    options.powerPreference = ::wnn::PowerPreference::Low_power;
   }
 
 #ifdef __EMSCRIPTEN__
-  ::ml::Context context = emscripten_webnn_create_context(&options);
+  ::wnn::Context context = emscripten_webnn_create_context(&options);
 #else
   std::unique_ptr<webnn_native::Instance> instance;
   instance = std::make_unique<webnn_native::Instance>();
   WebnnProcTable backendProcs = webnn_native::GetProcs();
   webnnProcSetProcs(&backendProcs);
-  ::ml::Context context = instance->CreateContext(&options);
+  ::wnn::Context context = instance->CreateContext(&options);
 
 
 #endif
@@ -66,16 +66,16 @@ Status ModelBuilder::Initialize() {
   }
 #ifndef __EMSCRIPTEN__
   context.SetUncapturedErrorCallback(
-    [](MLErrorType type, char const* message, void* userData) {
+    [](WNNErrorType type, char const* message, void* userData) {
       ModelBuilder* builder = reinterpret_cast<ModelBuilder*>(userData);
-      if (type != MLErrorType_NoError) {
+      if (type != WNNErrorType_NoError) {
         LOGS(builder->logger_, ERROR) << "Uncaptured Error type is "
             << type << ", message is " << message;
       }
     },
     this);
 #endif
-  builder_ = ::ml::CreateGraphBuilder(context);
+  builder_ = ::wnn::CreateGraphBuilder(context);
   if (!builder_) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to create WebNN graph builder.");
   }
@@ -119,7 +119,7 @@ void ModelBuilder::PreprocessActivations() {
       activation_nodes_.emplace(node->Index(), builder_.ReluOperator());
     } else if (op_type == "LeakyRelu") {
       NodeAttrHelper helper(*node);
-      ml::LeakyReluOptions options;
+      wnn::LeakyReluOptions options;
       options.alpha = helper.Get("alpha", (float)0.0);
       activation_nodes_.emplace(node->Index(), builder_.LeakyReluOperator(&options));
     } else if (op_type == "Sigmoid") {
@@ -127,7 +127,7 @@ void ModelBuilder::PreprocessActivations() {
     } else if (op_type == "Tanh") {
       activation_nodes_.emplace(node->Index(), builder_.TanhOperator());
     } else if (op_type == "Clip") {
-      ml::ClampOptions clamp_options;
+      wnn::ClampOptions clamp_options;
       GetClipMinMax(GetInitializerTensors(), *node, clamp_options.minValue, clamp_options.maxValue, logger_);
       activation_nodes_.emplace(node->Index(), builder_.ClampOperator(&clamp_options));
     }
@@ -152,7 +152,7 @@ Status ModelBuilder::RegisterInitializers() {
                      std::back_inserter(dims),
                      [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
     }
-    ::ml::OperandDescriptor desc;
+    ::wnn::OperandDescriptor desc;
     desc.dimensions = dims.data();
     desc.dimensionsCount = SafeInt<uint32_t>(dims.size());
 
@@ -162,8 +162,8 @@ Status ModelBuilder::RegisterInitializers() {
       std::vector<uint8_t>& unpacked_tensor = unpacked_tensors_.back();
       ORT_RETURN_IF_ERROR(onnxruntime::utils::UnpackInitializerData(tensor, unpacked_tensor));
       auto num_elements = SafeInt<size_t>(Product(tensor.dims()));
-      desc.type = ::ml::OperandType::Float32;
-      ml::ArrayBufferView bufferView;
+      desc.type = ::wnn::OperandType::Float32;
+      wnn::ArrayBufferView bufferView;
       bufferView.buffer = reinterpret_cast<float*>(unpacked_tensor.data());
       bufferView.byteLength = num_elements * sizeof(float);
       operands_[name] = builder_.Constant(&desc, &bufferView);
@@ -219,7 +219,7 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
     }
   }
 
-  ::ml::OperandDescriptor desc;
+  ::wnn::OperandDescriptor desc;
   desc.dimensions = dims.data();
   desc.dimensionsCount = SafeInt<uint32_t>(dims.size());
 
@@ -234,7 +234,7 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
     data_type = type_proto->tensor_type().elem_type();
     switch (data_type) {
       case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
-        desc.type = ::ml::OperandType::Float32;
+        desc.type = ::wnn::OperandType::Float32;
         break;
       default: {
         // TODO: support other type
@@ -294,11 +294,11 @@ Status ModelBuilder::RegisterModelOutputs() {
 
 Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   ORT_RETURN_IF_ERROR(Initialize());
-  ::ml::NamedOperands named_operands = ::ml::CreateNamedOperands();
+  ::wnn::NamedOperands named_operands = ::wnn::CreateNamedOperands();
   for (auto name : output_names_) {
     named_operands.Set(name.c_str(), operands_[name]);
   }
-  ::ml::Graph graph = builder_.Build(named_operands);
+  ::wnn::Graph graph = builder_.Build(named_operands);
   if (!graph) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to build WebNN graph.");
   }
@@ -310,8 +310,8 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   return Status::OK();
 }
 
-::ml::FusionOperator ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
-  ::ml::FusionOperator fused_op;
+::wnn::FusionOperator ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
+  ::wnn::FusionOperator fused_op;
 
   for (auto it = node.OutputEdgesBegin(), end = node.OutputEdgesEnd(); it != end; ++it) {
     const auto& dst_node = it->GetNode();
@@ -324,7 +324,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
       // if there is any other non-relu node using the output
       // will add relu separately
       if (&output == dst_input)
-        return ::ml::FusionOperator();
+        return ::wnn::FusionOperator();
     }
   }
 
@@ -332,7 +332,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   if (fused_op != nullptr) {
     for (const auto* graph_output : graph_viewer_.GetOutputs()) {
       if (&output == graph_output)
-        return ::ml::FusionOperator();
+        return ::wnn::FusionOperator();
     }
 
     LOGS_DEFAULT(VERBOSE) << "Node [" << node.Name() << "] type [" << node.OpType()
@@ -348,7 +348,7 @@ void ModelBuilder::AddScalarOutput(const std::string& output_name) {
   scalar_outputs_.insert(output_name);
 }
 
-void ModelBuilder::AddOperand(const std::string& name, const ::ml::Operand& operand) {
+void ModelBuilder::AddOperand(const std::string& name, const ::wnn::Operand& operand) {
   operands_[name] = operand;
 }
 

@@ -30,8 +30,8 @@ Status ActivationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                                   const Node& node,
                                                   const logging::Logger& /* logger */) const {
   const auto& op_type(node.OpType());
-  ::ml::Operand input = model_builder.GetOperand(node.InputDefs()[0]->Name());
-  ::ml::Operand output;
+  ::wnn::Operand input = model_builder.GetOperand(node.InputDefs()[0]->Name());
+  ::wnn::Operand output;
   if (op_type == "Relu") {
     if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
       LOGS_DEFAULT(VERBOSE) << "Relu Node [" << node.Name() << "] fused";
@@ -45,7 +45,7 @@ Status ActivationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
       output = input;
     } else {
       NodeAttrHelper helper(node);
-      ml::LeakyReluOptions options;
+      wnn::LeakyReluOptions options;
       options.alpha = helper.Get("alpha", (float)0.0);
       output = model_builder.GetBuilder().LeakyRelu(input, &options);
     }

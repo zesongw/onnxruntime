@@ -37,15 +37,15 @@ Status TransposeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     ORT_RETURN_IF_NOT(perm.size() == input_dims, "Perm and input should have same dimension");
   }
 
-  ::ml::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::ml::TransposeOptions options;
+  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
+  ::wnn::TransposeOptions options;
   std::vector<int32_t> permutation;
   std::transform(perm.cbegin(), perm.cend(),
                  std::back_inserter(permutation),
                  [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
   options.permutationCount = SafeInt<uint32_t>(permutation.size());
   options.permutation = permutation.data();
-  ::ml::Operand output = model_builder.GetBuilder().Transpose(input, &options);
+  ::wnn::Operand output = model_builder.GetBuilder().Transpose(input, &options);
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }

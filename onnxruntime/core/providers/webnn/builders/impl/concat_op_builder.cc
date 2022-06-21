@@ -40,13 +40,13 @@ Status ConcatOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   NodeAttrHelper helper(node);
   uint32_t axis = static_cast<uint32_t>(HandleNegativeAxis(helper.Get("axis", 1), rank));
 
-  std::vector<::ml::Operand> inputs;
+  std::vector<::wnn::Operand> inputs;
   for (const auto* input : node.InputDefs()) {
     LOGS(logger, VERBOSE) << "input name " << input->Name();
     inputs.push_back(model_builder.GetOperand(input->Name()));
   }
 
-  ::ml::Operand output = model_builder.GetBuilder().Concat(SafeInt<uint32_t>(inputs.size()), inputs.data(), axis);
+  ::wnn::Operand output = model_builder.GetBuilder().Concat(SafeInt<uint32_t>(inputs.size()), inputs.data(), axis);
 
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();

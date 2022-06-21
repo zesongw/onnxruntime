@@ -29,9 +29,9 @@ Status BinaryOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const
                                               const logging::Logger& /* logger */) const {
   const auto& op_type(node.OpType());
 
-  ::ml::Operand input0 = model_builder.GetOperand(node.InputDefs()[0]->Name());
-  ::ml::Operand input1 = model_builder.GetOperand(node.InputDefs()[1]->Name());
-  ::ml::Operand output;
+  ::wnn::Operand input0 = model_builder.GetOperand(node.InputDefs()[0]->Name());
+  ::wnn::Operand input1 = model_builder.GetOperand(node.InputDefs()[1]->Name());
+  ::wnn::Operand output;
   if (op_type == "Add") {
     output = model_builder.GetBuilder().Add(input0, input1);
   } else {

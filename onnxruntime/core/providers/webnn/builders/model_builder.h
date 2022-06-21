@@ -24,13 +24,13 @@ class ModelBuilder {
   // Accessors for members
   const GraphViewer& GetGraphViewer() const { return graph_viewer_; }
   const InitializedTensorSet& GetInitializerTensors() const { return graph_viewer_.GetAllInitializedTensors(); }
-  
-  const ::ml::GraphBuilder& GetBuilder() const { return builder_; }
-  const ::ml::Operand& GetOperand(const std::string& name) const { return operands_.at(name); }
-  void AddOperand(const std::string& name, const ::ml::Operand& operand);
+
+  const ::wnn::GraphBuilder& GetBuilder() const { return builder_; }
+  const ::wnn::Operand& GetOperand(const std::string& name) const { return operands_.at(name); }
+  void AddOperand(const std::string& name, const ::wnn::Operand& operand);
 
   // Find if an output has a fuseable activation (e.g., Relu)
-  ::ml::FusionOperator FindActivation(const Node& node, const NodeArg& output);
+  ::wnn::FusionOperator FindActivation(const Node& node, const NodeArg& output);
 
   const std::unordered_set<std::string>&
   GetFusedActivations() const { return fused_activations_; }
@@ -50,9 +50,9 @@ class ModelBuilder {
   uint32_t device_flags_;
   uint32_t power_flags_;
 
-  ::ml::GraphBuilder builder_;
+  ::wnn::GraphBuilder builder_;
   std::vector<std::vector<uint8_t>> unpacked_tensors_;
-  std::unordered_map<std::string, ::ml::Operand> operands_;
+  std::unordered_map<std::string, ::wnn::Operand> operands_;
   std::vector<std::string> input_names_;
   std::vector<std::string> output_names_;
 
@@ -68,7 +68,7 @@ class ModelBuilder {
   std::unordered_set<std::string> unique_names_;
 
   // All activation nodes (e.g., Relu) as a map <NodeIndex, FusionOperator>
-  std::unordered_map<NodeIndex, ::ml::FusionOperator> activation_nodes_;
+  std::unordered_map<NodeIndex, ::wnn::FusionOperator> activation_nodes_;
 
   // Convert the onnx model to WebNN operands
   Status Initialize() ORT_MUST_USE_RESULT;

@@ -34,7 +34,7 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   const auto& op_type = node.OpType();
   const auto& input_defs = node.InputDefs();
 
-  ::ml::Operand input = model_builder.GetOperand(input_defs[0]->Name());
+  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
 
   bool is_global_pooling = false;
   bool is_average_pool = false;
@@ -50,7 +50,7 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "PoolOpBuilder, unknown op: ", op_type);
   }
 
-  ::ml::Pool2dOptions options;
+  ::wnn::Pool2dOptions options;
   NodeAttrHelper helper(node);
 
   const auto kernel_shape = helper.Get("kernel_shape", std::vector<int32_t>{0, 0});
@@ -82,16 +82,20 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
 
   if (AutoPadType::SAME_UPPER == auto_pad_type || AutoPadType::SAME_LOWER == auto_pad_type) {
     if (AutoPadType::SAME_LOWER == auto_pad_type) {  // default is SAME_UPPER
-      options.autoPad = ::ml::AutoPad::SameLower;
+      options.autoPad = ::wnn::AutoPad::SameLower;
     } else {
-      options.autoPad = ::ml::AutoPad::SameUpper;
+      options.autoPad = ::wnn::AutoPad::SameUpper;
     }
   } else {
     options.padding = pads.data();
     options.paddingCount = SafeInt<uint32_t>(pads.size());
   }
 
-  ::ml::Operand output;
+  const auto ceil_mode = helper.Get("ceil_mode", 0);
+  options.roundingType = ceil_mode == 0 ? ::wnn::RoundingType::Floor
+                                        : ::wnn::RoundingType::Ceil;
+
+  ::wnn::Operand output;
   if (is_average_pool) {
     output = model_builder.GetBuilder().AveragePool2d(input, &options);
   } else {
@@ -130,14 +134,6 @@ bool PoolOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& /* initializer
 
     if (helper.Get("kernel_shape", std::vector<int32_t>{1, 1}).size() != 2) {
       LOGS(logger, VERBOSE) << "Only pooling 2d is supported";
-      return false;
-    }
-
-    // TODO, add support of the ceil_mode by adjusting the padding
-    // See https://stackoverflow.com/questions/59906456/in-pytorchs-maxpool2d-is-padding-added-depending-on-ceil-mode
-    // and https://github.com/apple/webnntools/blob/1931758aae383c83daddfc56f11a24a9d2bf4b87/webnntools/converters/mil/frontend/torch/ops.py#L621-L644
-    if (helper.Get("ceil_mode", 0) == 1) {
-      LOGS(logger, VERBOSE) << "ceil_mode == 1 is not supported for pooling";
       return false;
     }
 

@@ -55,13 +55,13 @@ class Model {
   size_t GetMappedOutputIdx(const std::string& name) const;
 
  private:
-  ::ml::Graph graph_;
+  ::wnn::Graph graph_;
   const logging::Logger& logger_;
   uint32_t device_flags_;
   uint32_t power_flags_;
 
-  std::unordered_map<std::string, ::ml::Input> ml_inputs_;
-  std::unordered_map<std::string, ::ml::ArrayBufferView> ml_outputs_;
+  std::unordered_map<std::string, ::wnn::Input> wnn_inputs_;
+  std::unordered_map<std::string, ::wnn::Resource> wnn_outputs_;
 
   std::unordered_set<std::string> scalar_outputs_;
 
@@ -75,7 +75,7 @@ class Model {
 
   OrtMutex mutex_;
 
-  Model(const ::ml::Graph& path, const logging::Logger& logger, uint32_t device_flags, uint32_t power_flags);
+  Model(const ::wnn::Graph& path, const logging::Logger& logger, uint32_t device_flags, uint32_t power_flags);
 
   void SetInputOutputInfo(std::unordered_map<std::string, OnnxTensorInfo>&& input_output_info) {
     input_output_info_ = std::move(input_output_info);
