@@ -6,7 +6,11 @@
 #include "core/common/status.h"
 #include "core/platform/ort_mutex.h"
 
-#include <webnn/webnn_cpp.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <emscripten/val.h>
+#endif
 
 namespace onnxruntime {
 namespace webnn {
@@ -55,14 +59,14 @@ class Model {
   size_t GetMappedOutputIdx(const std::string& name) const;
 
  private:
-  ::wnn::Context context_;
-  ::wnn::Graph graph_;
+  emscripten::val wnn_context_ = emscripten::val::object();
+  emscripten::val wnn_graph_ = emscripten::val::object();
   const logging::Logger& logger_;
   uint32_t device_flags_;
   uint32_t power_flags_;
 
-  std::unordered_map<std::string, ::wnn::Input> wnn_inputs_;
-  std::unordered_map<std::string, ::wnn::Resource> wnn_outputs_;
+  emscripten::val wnn_inputs_ = emscripten::val::object();
+  emscripten::val wnn_outputs_ = emscripten::val::object();
 
   std::unordered_set<std::string> scalar_outputs_;
 
@@ -76,7 +80,7 @@ class Model {
 
   OrtMutex mutex_;
 
-  Model(const ::wnn::Context& context, const ::wnn::Graph& path, const logging::Logger& logger, uint32_t device_flags, uint32_t power_flags);
+  Model(const emscripten::val& context, const emscripten::val& path, const logging::Logger& logger, uint32_t device_flags, uint32_t power_flags);
 
   void SetInputOutputInfo(std::unordered_map<std::string, OnnxTensorInfo>&& input_output_info) {
     input_output_info_ = std::move(input_output_info);

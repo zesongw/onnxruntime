@@ -17,11 +17,9 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #include <emscripten/html5.h>
-#include <emscripten/html5_webnn.h>
-#else
-#include <webnn/webnn_proc.h>
-#include <webnn/native/WebnnNative.h>
+#include <emscripten/val.h>
 #endif
+
 
 namespace onnxruntime {
 namespace webnn {
@@ -36,51 +34,24 @@ ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logge
 
 Status ModelBuilder::Initialize() {
   // Create WebNN context and graph builder
-  ::wnn::ContextOptions options;
-  options.devicePreference = ::wnn::DevicePreference::Default;
-  options.powerPreference = ::wnn::PowerPreference::Default;
-  if (device_flags_ == WEBNN_DEVICE_FLAG_USE_GPU) {
-    options.devicePreference = ::wnn::DevicePreference::Gpu;
-  } else if (device_flags_ == WEBNN_DEVICE_FLAG_USE_CPU) {
-    options.devicePreference = ::wnn::DevicePreference::Cpu;
-  }
-  if (power_flags_ == WEBNN_POWER_FLAG_USE_HIGH_PERFORMANCE) {
-    options.powerPreference = ::wnn::PowerPreference::High_performance;
-  } else if (power_flags_ == WEBNN_POWER_FLAG_USE_LOW_POWER) {
-    options.powerPreference = ::wnn::PowerPreference::Low_power;
-  }
-
-#ifdef __EMSCRIPTEN__
-  ::wnn::Context context = emscripten_webnn_create_context(&options);
-#else
-  std::unique_ptr<::webnn::native::Instance> instance;
-  instance = std::make_unique<::webnn::native::Instance>();
-  WebnnProcTable backendProcs = ::webnn::native::GetProcs();
-  webnnProcSetProcs(&backendProcs);
-  ::wnn::Context context = instance->CreateContext(&options);
-
-
-#endif
-  if (!context) {
+  std::unordered_map<uint32_t, std::string> device_type_name_s = {
+    {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
+  std::unordered_map<uint32_t, std::string> power_preference_name_s = {
+      {0, "auto"}, {1, "high-performance"}, {2, "low-power"}};
+  std::string device_type_name_ = device_type_name_s[device_flags_];
+  std::string power_preference_name_ = power_preference_name_s[power_flags_];
+  thread_local const emscripten::val ml = emscripten::val::global("navigator")["ml"];
+  emscripten::val context_options = emscripten::val::object();
+  context_options.set("deviceType", emscripten::val(device_type_name_));
+  context_options.set("powerPreference", emscripten::val(power_preference_name_));
+  wnn_context_ = ml.call<emscripten::val>("createContextSync", context_options);
+  if (!wnn_context_.as<bool>()) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to create WebNN context.");
   }
-#ifndef __EMSCRIPTEN__
-  context.SetUncapturedErrorCallback(
-    [](WNNErrorType type, char const* message, void* userData) {
-      ModelBuilder* builder = reinterpret_cast<ModelBuilder*>(userData);
-      if (type != WNNErrorType_NoError) {
-        LOGS(builder->logger_, ERROR) << "Uncaptured Error type is "
-            << type << ", message is " << message;
-      }
-    },
-    this);
-#endif
-  builder_ = ::wnn::CreateGraphBuilder(context);
-  context_ = context;
-  if (!builder_) {
-    return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to create WebNN graph builder.");
+  wnn_builder_ = emscripten::val::global("MLGraphBuilder").new_(wnn_context_);
+  if (!wnn_builder_.as<bool>()) {
+    return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to create WebNN builder.");
   }
-
   PreprocessInitializers();
   PreprocessActivations();
   ORT_RETURN_IF_ERROR(RegisterInitializers());
@@ -110,6 +81,14 @@ void ModelBuilder::PreprocessInitializers() {
   }
 }
 
+  emscripten::val GetClampOperator(
+      const emscripten::val& builder, float min_value, float max_value) {
+    emscripten::val options = emscripten::val::object();
+    options.set("minValue", min_value);
+    options.set("maxValue", max_value);
+    return builder.call<emscripten::val>("clamp", options);
+  }
+
 void ModelBuilder::PreprocessActivations() {
   const auto& node_indices = graph_viewer_.GetNodesInTopologicalOrder();
   for (size_t i = 0; i < node_indices.size(); i++) {
@@ -117,20 +96,22 @@ void ModelBuilder::PreprocessActivations() {
     const auto& op_type(node->OpType());
 
     if (op_type == "Relu") {
-      activation_nodes_.emplace(node->Index(), builder_.ReluOperator());
-    } else if (op_type == "LeakyRelu") {
+      activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("relu"));
+    } 
+    else if (op_type == "LeakyRelu") {
       NodeAttrHelper helper(*node);
-      wnn::LeakyReluOptions options;
-      options.alpha = helper.Get("alpha", (float)0.0);
-      activation_nodes_.emplace(node->Index(), builder_.LeakyReluOperator(&options));
-    } else if (op_type == "Sigmoid") {
-      activation_nodes_.emplace(node->Index(), builder_.SigmoidOperator());
+      emscripten::val options = emscripten::val::object();
+      options.set("alpha", helper.Get("alpha", (float)0.0));
+      activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("leakyRelu", options));
+    } 
+    else if (op_type == "Sigmoid") {
+      activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("sigmoid"));
     } else if (op_type == "Tanh") {
-      activation_nodes_.emplace(node->Index(), builder_.TanhOperator());
+      activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("tanh"));
     } else if (op_type == "Clip") {
-      wnn::ClampOptions clamp_options;
-      GetClipMinMax(GetInitializerTensors(), *node, clamp_options.minValue, clamp_options.maxValue, logger_);
-      activation_nodes_.emplace(node->Index(), builder_.ClampOperator(&clamp_options));
+      float minValue, maxValue;
+      GetClipMinMax(GetInitializerTensors(), *node, minValue, maxValue, logger_);
+      activation_nodes_.emplace(node->Index(), GetClampOperator(wnn_builder_, minValue, maxValue));
     }
   }
 }
@@ -153,27 +134,26 @@ Status ModelBuilder::RegisterInitializers() {
                      std::back_inserter(dims),
                      [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
     }
-    ::wnn::OperandDescriptor desc;
-    desc.dimensions = dims.data();
-    desc.dimensionsCount = SafeInt<uint32_t>(dims.size());
 
+    emscripten::val desc = emscripten::val::object();
+    desc.set("dimensions", emscripten::val::array(dims));
     auto data_type = tensor.data_type();
+    emscripten::val operand = emscripten::val::object();
     if (data_type == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
       unpacked_tensors_.push_back({});
       std::vector<uint8_t>& unpacked_tensor = unpacked_tensors_.back();
       ORT_RETURN_IF_ERROR(onnxruntime::utils::UnpackInitializerData(tensor, unpacked_tensor));
       auto num_elements = SafeInt<size_t>(Product(tensor.dims()));
-      desc.type = ::wnn::OperandType::Float32;
-      wnn::ArrayBufferView bufferView;
-      bufferView.buffer = reinterpret_cast<float*>(unpacked_tensor.data());
-      bufferView.byteLength = num_elements * sizeof(float);
-      operands_[name] = builder_.Constant(&desc, &bufferView);
+      desc.set("type", emscripten::val("float32"));
+      emscripten::val view{ emscripten::typed_memory_view(num_elements, reinterpret_cast<float*>(unpacked_tensor.data())) };
+      operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
     } else {
       // TODO: support other type
       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                               "The initializer of graph has unsupported type, name: ",
                               tensor.name(), " type: ", data_type);
     }
+    wnn_operands_.insert(std::make_pair(name, operand));
   }
 
   return Status::OK();
@@ -220,9 +200,8 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
     }
   }
 
-  ::wnn::OperandDescriptor desc;
-  desc.dimensions = dims.data();
-  desc.dimensionsCount = SafeInt<uint32_t>(dims.size());
+  emscripten::val desc = emscripten::val::object();;
+  desc.set("dimensions", emscripten::val::array(dims));
 
   int32_t data_type;
   {  // type
@@ -235,7 +214,7 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
     data_type = type_proto->tensor_type().elem_type();
     switch (data_type) {
       case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
-        desc.type = ::wnn::OperandType::Float32;
+        desc.set("type", emscripten::val("float32"));
         break;
       default: {
         // TODO: support other type
@@ -247,7 +226,7 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
   }
 
   if (is_input) {
-    operands_[name] = builder_.Input(name.c_str(), &desc);
+    wnn_operands_.insert(std::make_pair(name, wnn_builder_.call<emscripten::val>("input", name, desc)));
     input_names_.push_back(name);
   } else {
     output_names_.push_back(name);
@@ -295,15 +274,15 @@ Status ModelBuilder::RegisterModelOutputs() {
 
 Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   ORT_RETURN_IF_ERROR(Initialize());
-  ::wnn::NamedOperands named_operands = ::wnn::CreateNamedOperands();
+  emscripten::val named_operands = emscripten::val::object();
   for (auto name : output_names_) {
-    named_operands.Set(name.c_str(), operands_[name]);
+    named_operands.set(name, wnn_operands_.at(name));
   }
-  ::wnn::Graph graph = builder_.Build(named_operands);
-  if (!graph) {
+  emscripten::val wnn_graph = wnn_builder_.call<emscripten::val>("buildSync", named_operands);
+  if (!wnn_graph.as<bool>()) {
     return ORT_MAKE_STATUS(ONNXRUNTIME, FAIL, "Failed to build WebNN graph.");
   }
-  model.reset(new Model(std::move(context_), std::move(graph), logger_, device_flags_, power_flags_));
+  model.reset(new Model(std::move(wnn_context_), std::move(wnn_graph), logger_, device_flags_, power_flags_));
   model->SetInputs(std::move(input_names_));
   model->SetOutputs(std::move(output_names_));
   model->SetScalarOutputs(std::move(scalar_outputs_));
@@ -311,9 +290,8 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   return Status::OK();
 }
 
-::wnn::FusionOperator ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
-  ::wnn::FusionOperator fused_op;
-
+emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
+  emscripten::val fused_op = emscripten::val::null();
   for (auto it = node.OutputEdgesBegin(), end = node.OutputEdgesEnd(); it != end; ++it) {
     const auto& dst_node = it->GetNode();
     const auto* dst_input = dst_node.InputDefs()[it->GetDstArgIndex()];
@@ -324,16 +302,19 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
     } else {
       // if there is any other non-relu node using the output
       // will add relu separately
-      if (&output == dst_input)
-        return ::wnn::FusionOperator();
+      if (&output == dst_input) {
+        return emscripten::val::null();
+      }
+
     }
   }
 
   // if output is a graph output, will add relu separately
-  if (fused_op != nullptr) {
+  if (fused_op != emscripten::val::null()) {
     for (const auto* graph_output : graph_viewer_.GetOutputs()) {
-      if (&output == graph_output)
-        return ::wnn::FusionOperator();
+      if (&output == graph_output) {
+        return emscripten::val::null();
+      }
     }
 
     LOGS_DEFAULT(VERBOSE) << "Node [" << node.Name() << "] type [" << node.OpType()
@@ -341,7 +322,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
 
     fused_activations_.insert(output.Name());
   }
-
+  
   return fused_op;
 }
 
@@ -349,8 +330,8 @@ void ModelBuilder::AddScalarOutput(const std::string& output_name) {
   scalar_outputs_.insert(output_name);
 }
 
-void ModelBuilder::AddOperand(const std::string& name, const ::wnn::Operand& operand) {
-  operands_[name] = operand;
+void ModelBuilder::AddOperand(const std::string& name, const emscripten::val& operand) {
+  wnn_operands_.insert(std::make_pair(name, operand));
 }
 
 void ModelBuilder::AddInitializerToSkip(const std::string& tensor_name) {

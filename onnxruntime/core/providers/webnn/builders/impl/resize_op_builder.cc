@@ -102,13 +102,13 @@ void ResizeOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const N
 Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                               const Node& node,
                                               const logging::Logger& logger) const {
-  ::wnn::Resample2dOptions options;
+  emscripten::val options = emscripten::val::object();
   NodeAttrHelper helper(node);
   const auto mode = helper.Get("mode", "nearest");
   if (mode == "linear") {
-    options.mode = ::wnn::InterpolationMode::Linear;
+    options.set("mode", emscripten::val("linear"));
   } else {  // we already checked the mode must be NN or Bilinear in IsOpSupportedImpl
-    options.mode = ::wnn::InterpolationMode::NearestNeighbor;
+    options.set("mode", emscripten::val("nearest-neighbor"));
   }
 
   const auto& input_defs = node.InputDefs();
@@ -121,8 +121,7 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   if (input_defs.size() == 3) {  // use scales
     ORT_RETURN_IF_NOT(GetResizeScales(initializers, node, scales, logger), "Error getting resize scales");
     scales_hw = {scales[2], scales[3]};
-    options.scalesCount = SafeInt<uint32_t>(scales_hw.size());
-    options.scales = scales_hw.data();
+    options.set("scales", emscripten::val::array(scales_hw));
   } else {  // we already checked number of inputs in IsOpSupportedImpl
     std::vector<int64_t> output_sizes;
     ORT_RETURN_IF_NOT(GetResizeOutputSizes(initializers, node, output_sizes, logger),
@@ -131,15 +130,13 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                  std::back_inserter(sizes),
                  [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
     sizes_hw = {sizes[2], sizes[3]};
-    options.sizesCount = SafeInt<uint32_t>(sizes_hw.size());
-    options.sizes = sizes_hw.data();
+    options.set("sizes", emscripten::val::array(sizes_hw));
   }
 
   std::vector<int32_t> axes = {2, 3};
-  options.axesCount = SafeInt<uint32_t>(axes.size());
-  options.axes = axes.data();
-  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::wnn::Operand output = model_builder.GetBuilder().Resample2d(input, &options);
+  options.set("axes", emscripten::val::array(axes));
+  emscripten::val input = model_builder.GetOperand(input_defs[0]->Name());
+  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("resample2d", input, options);
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }

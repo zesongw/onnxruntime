@@ -8,8 +8,6 @@
 
 #include "base_op_builder.h"
 
-#include <webnn/webnn_cpp.h>
-
 namespace onnxruntime {
 namespace webnn {
 
@@ -30,14 +28,14 @@ Status ActivationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                                   const Node& node,
                                                   const logging::Logger& /* logger */) const {
   const auto& op_type(node.OpType());
-  ::wnn::Operand input = model_builder.GetOperand(node.InputDefs()[0]->Name());
-  ::wnn::Operand output;
+  emscripten::val input = model_builder.GetOperand(node.InputDefs()[0]->Name());
+  emscripten::val output = emscripten::val::object();
   if (op_type == "Relu") {
     if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
       LOGS_DEFAULT(VERBOSE) << "Relu Node [" << node.Name() << "] fused";
       output = input;
     } else {
-      output = model_builder.GetBuilder().Relu(input);
+      output = model_builder.GetBuilder().call<emscripten::val>("relu", input);
     }
   } else if (op_type == "LeakyRelu") {
     if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
@@ -45,23 +43,23 @@ Status ActivationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
       output = input;
     } else {
       NodeAttrHelper helper(node);
-      wnn::LeakyReluOptions options;
-      options.alpha = helper.Get("alpha", (float)0.0);
-      output = model_builder.GetBuilder().LeakyRelu(input, &options);
+      emscripten::val options = emscripten::val::object();
+      options.set("alpha", helper.Get("alpha", (float)0.0));
+      output = model_builder.GetBuilder().call<emscripten::val>("leakyRelu", input, options);
     }
   } else if (op_type == "Sigmoid") {
     if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
       LOGS_DEFAULT(VERBOSE) << "Sigmoid Node [" << node.Name() << "] fused";
       output = input;
     } else {
-      output = model_builder.GetBuilder().Sigmoid(input);
+      output = model_builder.GetBuilder().call<emscripten::val>("sigmoid", input);
     }
   } else if (op_type == "Tanh") {
     if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
       LOGS_DEFAULT(VERBOSE) << "Tanh Node [" << node.Name() << "] fused";
       output = input;
     } else {
-      output = model_builder.GetBuilder().Tanh(input);
+      output = model_builder.GetBuilder().call<emscripten::val>("tanh", input);
     }
   } else {
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
