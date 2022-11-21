@@ -302,7 +302,7 @@ endif()
 # Enable space optimization for gcc/clang
 # Cannot use "-ffunction-sections -fdata-sections" if we enable bitcode (iOS)
 if (NOT MSVC AND NOT onnxruntime_ENABLE_BITCODE)
-  string(APPEND CMAKE_CXX_FLAGS " -ffunction-sections -fdata-sections")
+  string(APPEND CMAKE_CXX_FLAGS " -ffunction-sections -fdata-sections --bind")
   string(APPEND CMAKE_C_FLAGS " -ffunction-sections -fdata-sections")
 endif()
 
@@ -412,8 +412,8 @@ if(onnxruntime_DISABLE_RTTI)
   if(MSVC)
     # Disable RTTI and turn usage of dynamic_cast and typeid into errors
     add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:/GR->" "$<$<COMPILE_LANGUAGE:CXX>:/we4541>")
-  else()
-    add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>")
+  # else()
+  #   add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>")
   endif()
 else()
   #MSVC RTTI flag /GR is not added to CMAKE_CXX_FLAGS by default. But, anyway VC++2019 treats "/GR" default on.

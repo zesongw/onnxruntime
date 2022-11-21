@@ -34,17 +34,18 @@ Status BatchNormalizationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_bu
                                                           const Node& node,
                                                           const logging::Logger& /* logger */) const {
   const auto& input_defs = node.InputDefs();
-  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
-  ::wnn::BatchNormOptions options;
-  options.scale = model_builder.GetOperand(input_defs[1]->Name());
-  options.bias = model_builder.GetOperand(input_defs[2]->Name());
-  ::wnn::Operand mean = model_builder.GetOperand(input_defs[3]->Name());
-  ::wnn::Operand variance = model_builder.GetOperand(input_defs[4]->Name());
-  NodeAttrHelper helper(node);
-  options.epsilon = helper.Get("epsilon", 1e-5f);
-  options.activation = model_builder.FindActivation(node, *node.OutputDefs()[0]);
+  emscripten::val input = model_builder.GetOperand(input_defs[0]->Name());
+  emscripten::val options = emscripten::val::object();
+  options.set("scale", model_builder.GetOperand(input_defs[1]->Name()));
+  options.set("bias", model_builder.GetOperand(input_defs[2]->Name()));
 
-  ::wnn::Operand output = model_builder.GetBuilder().BatchNorm(input, mean, variance, &options);
+  emscripten::val mean = model_builder.GetOperand(input_defs[3]->Name());
+  emscripten::val variance = model_builder.GetOperand(input_defs[4]->Name());
+  NodeAttrHelper helper(node);
+  options.set("epsilon", helper.Get("epsilon", 1e-5f));
+  options.set("activation", model_builder.FindActivation(node, *node.OutputDefs()[0]));
+
+  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("batchNormalization", input, mean, variance, options);
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
 
   return Status::OK();

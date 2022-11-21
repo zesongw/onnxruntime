@@ -34,7 +34,7 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   const auto& op_type = node.OpType();
   const auto& input_defs = node.InputDefs();
 
-  ::wnn::Operand input = model_builder.GetOperand(input_defs[0]->Name());
+  emscripten::val input = model_builder.GetOperand(input_defs[0]->Name());
 
   bool is_global_pooling = false;
   bool is_average_pool = false;
@@ -50,20 +50,18 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "PoolOpBuilder, unknown op: ", op_type);
   }
 
-  ::wnn::Pool2dOptions options;
+  emscripten::val options = emscripten::val::object();
   NodeAttrHelper helper(node);
 
   const auto kernel_shape = helper.Get("kernel_shape", std::vector<int32_t>{0, 0});
   if (!is_global_pooling) {
-    options.windowDimensions = kernel_shape.data();
-    options.windowDimensionsCount = SafeInt<uint32_t>(kernel_shape.size());
+    options.set("windowDimensions", emscripten::val::array(kernel_shape));
   }
   const auto strides = helper.Get("strides", std::vector<int32_t>{1, 1});
-  options.strides = strides.data();
-  options.stridesCount = SafeInt<uint32_t>(strides.size());
+  options.set("strides", emscripten::val::array(strides));
   const auto dilations = helper.Get("dilations", std::vector<int32_t>{1, 1});
-  options.dilations = dilations.data();
-  options.dilationsCount = SafeInt<uint32_t>(dilations.size());
+  options.set("dilations", emscripten::val::array(dilations));
+
 
   // Add Padding
   // Usually using autopadding is more efficient than using explicit padding
@@ -82,26 +80,24 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
 
   if (AutoPadType::SAME_UPPER == auto_pad_type || AutoPadType::SAME_LOWER == auto_pad_type) {
     if (AutoPadType::SAME_LOWER == auto_pad_type) {  // default is SAME_UPPER
-      options.autoPad = ::wnn::AutoPad::SameLower;
+      options.set("autoPad", "same-lower");
     } else {
-      options.autoPad = ::wnn::AutoPad::SameUpper;
+      options.set("autoPad", "same-upper");
     }
   } else {
-    options.padding = pads.data();
-    options.paddingCount = SafeInt<uint32_t>(pads.size());
+    options.set("padding", emscripten::val::array(pads));
   }
 
   const auto ceil_mode = helper.Get("ceil_mode", 0);
-  options.roundingType = ceil_mode == 0 ? ::wnn::RoundingType::Floor
-                                        : ::wnn::RoundingType::Ceil;
+  options.set("roundingType", ceil_mode == 0 ? emscripten::val("floor")
+                                        : emscripten::val("ceil"));
 
-  ::wnn::Operand output;
+  emscripten::val output = emscripten::val::object();
   if (is_average_pool) {
-    output = model_builder.GetBuilder().AveragePool2d(input, &options);
+    output = model_builder.GetBuilder().call<emscripten::val>("averagePool2d", input, options);
   } else {
-    output = model_builder.GetBuilder().MaxPool2d(input, &options);
+    output = model_builder.GetBuilder().call<emscripten::val>("maxPool2d", input, options);
   }
-
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }

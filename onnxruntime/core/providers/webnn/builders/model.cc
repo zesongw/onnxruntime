@@ -17,9 +17,10 @@
 namespace onnxruntime {
 namespace webnn {
 
-Model::Model(const ::wnn::Graph& graph, const logging::Logger& logger,
+Model::Model(const emscripten::val& context, const emscripten::val& graph, const logging::Logger& logger,
              uint32_t device_flags, uint32_t power_flags)
-    : graph_(graph),
+    : wnn_context_(context),
+      wnn_graph_(graph),
       logger_(logger),
       device_flags_(device_flags),
       power_flags_(power_flags) {
@@ -29,36 +30,32 @@ Model::~Model() {}
 
 Status Model::Predict(const std::unordered_map<std::string, OnnxTensorData>& inputs,
                       const std::unordered_map<std::string, OnnxTensorData>& outputs) {
-  ::wnn::NamedInputs named_inputs = ::wnn::CreateNamedInputs();
   for (const auto& input: inputs) {
     const std::string& name = input.first;
     const struct OnnxTensorData tensor = input.second;
-    wnn_inputs_[name].resource.arrayBufferView.buffer = tensor.buffer;
     if (tensor.tensor_info.data_type != ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                              "The input of graph has unsupported type, name: ",
                              name, " type: ", tensor.tensor_info.data_type);
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
-    wnn_inputs_[name].resource.arrayBufferView.byteLength = SafeInt<uint32_t>(num_elements * sizeof(float));
-    named_inputs.Set(name.c_str(), &wnn_inputs_[name]);
+    emscripten::val view{ emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer)) };
+    wnn_inputs_.set(name, view);
   }
-  ::wnn::NamedOutputs named_outputs = ::wnn::CreateNamedOutputs();
   for (const auto& output: outputs) {
     const std::string& name = output.first;
     const struct OnnxTensorData tensor = output.second;
-    wnn_outputs_[name].arrayBufferView.buffer = tensor.buffer;
     if (tensor.tensor_info.data_type != ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                              "The input of graph has unsupported type, name: ",
                              name, " type: ", tensor.tensor_info.data_type);
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
-    wnn_outputs_[name].arrayBufferView.byteLength = num_elements * sizeof(float);
-    named_outputs.Set(name.c_str(), &wnn_outputs_[name]);
+    emscripten::val view{ emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer)) };
+    wnn_outputs_.set(name, view);
   }
 
-  graph_.Compute(named_inputs, named_outputs);
+  wnn_context_.call<emscripten::val>("computeSync", wnn_graph_, wnn_inputs_, wnn_outputs_);
 
   return Status::OK();
 }

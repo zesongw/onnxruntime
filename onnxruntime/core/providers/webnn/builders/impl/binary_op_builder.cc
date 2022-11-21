@@ -29,11 +29,11 @@ Status BinaryOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const
                                               const logging::Logger& /* logger */) const {
   const auto& op_type(node.OpType());
 
-  ::wnn::Operand input0 = model_builder.GetOperand(node.InputDefs()[0]->Name());
-  ::wnn::Operand input1 = model_builder.GetOperand(node.InputDefs()[1]->Name());
-  ::wnn::Operand output;
+  emscripten::val input0 = model_builder.GetOperand(node.InputDefs()[0]->Name());
+  emscripten::val input1 = model_builder.GetOperand(node.InputDefs()[1]->Name());
+  emscripten::val output = emscripten::val::object();
   if (op_type == "Add") {
-    output = model_builder.GetBuilder().Add(input0, input1);
+    output = model_builder.GetBuilder().call<emscripten::val>("add", input0, input1);
   } else {
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                            "BinaryOpBuilder::AddToModelBuilderImpl, unknown op: ", op_type);

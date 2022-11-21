@@ -5,9 +5,13 @@
 
 #include <core/graph/graph_viewer.h>
 
-#include <webnn/webnn_cpp.h>
-
 #include "model.h"
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <emscripten/val.h>
+#endif
 
 namespace onnxruntime {
 namespace webnn {
@@ -25,12 +29,14 @@ class ModelBuilder {
   const GraphViewer& GetGraphViewer() const { return graph_viewer_; }
   const InitializedTensorSet& GetInitializerTensors() const { return graph_viewer_.GetAllInitializedTensors(); }
 
-  const ::wnn::GraphBuilder& GetBuilder() const { return builder_; }
-  const ::wnn::Operand& GetOperand(const std::string& name) const { return operands_.at(name); }
-  void AddOperand(const std::string& name, const ::wnn::Operand& operand);
+
+  const emscripten::val& GetBuilder() const { return wnn_builder_; }
+  const emscripten::val& GetContext() const { return wnn_context_; }
+  const emscripten::val& GetOperand(const std::string& name) const { return wnn_operands_.at(name); }
+  void AddOperand(const std::string& name, const emscripten::val& operand);
 
   // Find if an output has a fuseable activation (e.g., Relu)
-  ::wnn::FusionOperator FindActivation(const Node& node, const NodeArg& output);
+  emscripten::val FindActivation(const Node& node, const NodeArg& output);
 
   const std::unordered_set<std::string>&
   GetFusedActivations() const { return fused_activations_; }
@@ -50,9 +56,10 @@ class ModelBuilder {
   uint32_t device_flags_;
   uint32_t power_flags_;
 
-  ::wnn::GraphBuilder builder_;
+  emscripten::val wnn_context_ = emscripten::val::object();
+  emscripten::val wnn_builder_ = emscripten::val::object();;
   std::vector<std::vector<uint8_t>> unpacked_tensors_;
-  std::unordered_map<std::string, ::wnn::Operand> operands_;
+  std::unordered_map<std::string, emscripten::val> wnn_operands_;
   std::vector<std::string> input_names_;
   std::vector<std::string> output_names_;
 
@@ -68,7 +75,7 @@ class ModelBuilder {
   std::unordered_set<std::string> unique_names_;
 
   // All activation nodes (e.g., Relu) as a map <NodeIndex, FusionOperator>
-  std::unordered_map<NodeIndex, ::wnn::FusionOperator> activation_nodes_;
+  std::unordered_map<NodeIndex, emscripten::val> activation_nodes_;
 
   // Convert the onnx model to WebNN operands
   Status Initialize() ORT_MUST_USE_RESULT;

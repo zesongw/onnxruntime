@@ -44,16 +44,18 @@ Status ClipOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                             const logging::Logger& logger) const {
   const auto& input_name = node.InputDefs()[0]->Name();
   const auto& output_name = node.OutputDefs()[0]->Name();
-  wnn::ClampOptions clamp_options;
-  ORT_RETURN_IF_NOT(GetClipMinMax(model_builder.GetInitializerTensors(), node, clamp_options.minValue, clamp_options.maxValue, logger), "GetClipMinMax failed");
-
-  ::wnn::Operand input = model_builder.GetOperand(input_name);
-  ::wnn::Operand output;
+  emscripten::val options = emscripten::val::object();
+  float minValue, maxValue;
+  ORT_RETURN_IF_NOT(GetClipMinMax(model_builder.GetInitializerTensors(), node, minValue, maxValue, logger), "GetClipMinMax failed");
+  options.set("minValue", minValue);
+  options.set("maxValue", maxValue);
+  emscripten::val input = model_builder.GetOperand(input_name);
+  emscripten::val output = emscripten::val::object();
   if (Contains(model_builder.GetFusedActivations(), input_name)) {
     LOGS_DEFAULT(VERBOSE) << "Clip Node [" << node.Name() << "] fused";
     output = input;
   } else {
-    output = model_builder.GetBuilder().Clamp(input, &clamp_options);
+    output = model_builder.GetBuilder().call<emscripten::val>("clamp", input, options);
   }
 
   model_builder.AddOperand(output_name, std::move(output));

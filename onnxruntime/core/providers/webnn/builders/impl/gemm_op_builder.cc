@@ -33,29 +33,29 @@ Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   const auto& input_defs = node.InputDefs();
   const size_t a_idx = 0, b_idx = 1, c_idx = 2;  // A*B+C
 
-  ::wnn::Operand a = model_builder.GetOperand(node.InputDefs()[a_idx]->Name());
-  ::wnn::Operand b = model_builder.GetOperand(node.InputDefs()[b_idx]->Name());
-  ::wnn::Operand output;
+  emscripten::val a = model_builder.GetOperand(node.InputDefs()[a_idx]->Name());
+  emscripten::val b = model_builder.GetOperand(node.InputDefs()[b_idx]->Name());
+  emscripten::val output = emscripten::val::object();
   if (op_type == "MatMul") {
-    output = model_builder.GetBuilder().Matmul(a, b);
+    output = model_builder.GetBuilder().call<emscripten::val>("matmul", a, b);
   } else {  // Gemm
-    ::wnn::GemmOptions options;
+    emscripten::val options = emscripten::val::object();
     NodeAttrHelper helper(node);
     const auto transA = helper.Get("transA", 0);
-    options.aTranspose = transA == 1;
+    options.set("aTranspose", emscripten::val(transA == 1));
     const auto transB = helper.Get("transB", 0);
-    options.bTranspose = transB == 1;
+    options.set("bTranspose",  emscripten::val(transB == 1));
     const auto alpha = helper.Get("alpha", 1.0f);
-    options.alpha = alpha;
     const auto beta = helper.Get("beta", 1.0f);
-    options.beta = beta;
+    options.set("alpha", alpha);
+    options.set("beta", beta);
 
     // Add bias if present
     if (input_defs.size() > 2) {
-      options.c = model_builder.GetOperand(node.InputDefs()[c_idx]->Name());
+      options.set("c",model_builder.GetOperand(node.InputDefs()[c_idx]->Name()));
     }
 
-    output = model_builder.GetBuilder().Gemm(a, b, &options);
+    output = model_builder.GetBuilder().call<emscripten::val>("gemm", a, b, options);
   }
 
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
