@@ -69,7 +69,7 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
 
   const auto& logger = *GetLogger();
 
-  const auto node_groups = webnn::GetSupportedNodes(graph_viewer, logger);
+  const auto node_groups = webnn::GetSupportedNodes(graph_viewer, webnn_device_flags_, webnn_power_flags_, logger);
 
   if (node_groups.empty()) {
     return result;
