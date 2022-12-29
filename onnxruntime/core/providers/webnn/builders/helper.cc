@@ -9,6 +9,12 @@
 #include "core/providers/common.h"
 #include "op_builder_factory.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <emscripten/val.h>
+#endif
+
 namespace onnxruntime {
 namespace webnn {
 
@@ -68,10 +74,15 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
 
   std::vector<size_t> supported_node_group;
   const auto& node_indices = graph_viewer.GetNodesInTopologicalOrder();
+  thread_local const emscripten::val ml = emscripten::val::global("navigator")["ml"];
+  emscripten::val wnn_context_ = ml.call<emscripten::val>("createContextSync");
+  emscripten::val wnn_builder_ = emscripten::val::global("MLGraphBuilder").new_(wnn_context_);
+
   for (size_t i = 0; i < node_indices.size(); i++) {
     auto node_idx = node_indices[i];
     const auto* node(graph_viewer.GetNode(node_idx));
     bool supported = IsNodeSupported(*node, graph_viewer, logger);
+    supported &= op_map.find(node->OpType())!=op_map.end() && wnn_builder_[op_map[node->OpType()]].as<bool>();
     LOGS(logger, VERBOSE) << "Operator type: [" << node->OpType()
                           << "] index: [" << node_idx
                           << "] name: [" << node->Name()

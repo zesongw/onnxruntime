@@ -25,5 +25,23 @@ bool IsInputSupported(const NodeArg& node_arg, const std::string& parent_name, c
 std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer,
                                                       const logging::Logger& logger);
 
+inline std::unordered_map<std::string,std::string> op_map = {
+    {"Add","add"},
+    {"BatchNormalization","batchNormalization"},
+    {"Clip","clamp"},
+    {"Conv","conv2d"},
+    {"ConvTranspose","convTranspose2d"},
+    {"Concat","concat"},
+    {"Gemm","gemm"},
+    {"MatMul","matmul"},
+    {"GRU","gru"},
+    {"GlobalAveragePool","averagePool2d"},
+    {"GlobalMaxPool","maxPool2d"},
+    {"AveragePool","averagePool2d"},
+    {"Reshape","reshape"},
+    {"Resize","resample2d"},
+    {"Transpose","transpose"}
+};
+
 }  // namespace webnn
 }  // namespace onnxruntime
