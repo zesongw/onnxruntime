@@ -35,9 +35,9 @@ WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_device_flags, uint
 
   InsertAllocator(CreateAllocator(cpu_memory_info));
 
-    // Create WebNN context and graph builder
+  // Create WebNN context and graph builder
   std::unordered_map<uint32_t, std::string> device_type_name_s = {
-    {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
+      {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
   std::unordered_map<uint32_t, std::string> power_preference_name_s = {
       {0, "auto"}, {1, "high-performance"}, {2, "low-power"}};
   std::string device_type_name_ = device_type_name_s[webnn_device_flags];
