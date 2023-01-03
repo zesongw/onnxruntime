@@ -60,8 +60,7 @@ bool IsInputSupported(const NodeArg& input, const std::string& parent_name, cons
   return true;
 }
 
-std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer, const uint32_t webnn_device_flags_,
-                                                      const uint32_t webnn_power_flags_, const logging::Logger& logger) {
+std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer, const emscripten::val& wnn_builder_, const logging::Logger& logger) {
   std::vector<std::vector<size_t>> supported_node_groups;
 
   for (const auto* input : graph_viewer.GetInputs()) {
@@ -73,25 +72,11 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
   std::vector<size_t> supported_node_group;
   const auto& node_indices = graph_viewer.GetNodesInTopologicalOrder();
 
-  // Create WebNN context and graph builder
-  std::unordered_map<uint32_t, std::string> device_type_name_s = {
-    {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
-  std::unordered_map<uint32_t, std::string> power_preference_name_s = {
-      {0, "auto"}, {1, "high-performance"}, {2, "low-power"}};
-  std::string device_type_name_ = device_type_name_s[webnn_device_flags_];
-  std::string power_preference_name_ = power_preference_name_s[webnn_power_flags_];
-  thread_local const emscripten::val ml = emscripten::val::global("navigator")["ml"];
-  emscripten::val context_options = emscripten::val::object();
-  context_options.set("deviceType", emscripten::val(device_type_name_));
-  context_options.set("powerPreference", emscripten::val(power_preference_name_));
-  emscripten::val wnn_context_ = ml.call<emscripten::val>("createContextSync", context_options);
-  emscripten::val wnn_builder_ = emscripten::val::global("MLGraphBuilder").new_(wnn_context_);
-
   for (size_t i = 0; i < node_indices.size(); i++) {
     auto node_idx = node_indices[i];
     const auto* node(graph_viewer.GetNode(node_idx));
     bool supported = false;
-    // First check if platform support the op
+    // Firstly check if platform supports the WebNN op
     if (op_map.find(node->OpType()) != op_map.end() && wnn_builder_[op_map[node->OpType()]].as<bool>()) {
       supported = IsNodeSupported(*node, graph_viewer, logger);
     }

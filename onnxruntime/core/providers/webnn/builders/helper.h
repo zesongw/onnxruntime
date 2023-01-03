@@ -6,6 +6,9 @@
 #include <core/common/status.h>
 #include <core/graph/basic_types.h>
 
+#include <emscripten.h>
+#include <emscripten/val.h>
+
 namespace onnxruntime {
 
 class GraphViewer;
@@ -22,8 +25,7 @@ bool GetShape(const NodeArg& node_arg, std::vector<int64_t>& shape, const loggin
 bool IsInputSupported(const NodeArg& node_arg, const std::string& parent_name, const logging::Logger& logger);
 
 // Get a list of groups of supported nodes, each group represents a subgraph supported by WebNN EP
-std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer, const uint32_t webnn_device_flags_,
-                                                      const uint32_t webnn_power_flags_, const logging::Logger& logger);
+std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer, const emscripten::val& wnn_builder_, const logging::Logger& logger);
 
 inline std::unordered_map<std::string, std::string> op_map = {
     {"Add", "add"},
