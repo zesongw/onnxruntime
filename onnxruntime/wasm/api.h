@@ -65,6 +65,9 @@ ort_session_options_handle_t EMSCRIPTEN_KEEPALIVE OrtCreateSessionOptions(size_t
 int EMSCRIPTEN_KEEPALIVE OrtAppendExecutionProvider(ort_session_options_handle_t session_options,
                                                     const char* name);
 
+// int EMSCRIPTEN_KEEPALIVE OrtSessionOptionsAppendExecutionProvider_WebNN(ort_session_options_handle_t session_options,
+//                                                                         const unsigned int webnn_device_flags, const unsigned int webnn_power_flags);
+
 /**
  * store configurations for a session.
  * @param session_options a handle to session options created by OrtCreateSessionOptions

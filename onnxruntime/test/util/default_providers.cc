@@ -8,6 +8,9 @@
 #ifdef USE_COREML
 #include "core/providers/coreml/coreml_provider_factory.h"
 #endif
+#ifdef USE_WEBNN
+#include "core/providers/webnn/webnn_provider_factory.h"
+#endif
 #include "core/session/onnxruntime_cxx_api.h"
 
 namespace onnxruntime {
@@ -201,6 +204,14 @@ std::unique_ptr<IExecutionProvider> DefaultSnpeExecutionProvider() {
 std::unique_ptr<IExecutionProvider> DefaultXnnpackExecutionProvider() {
 #ifdef USE_XNNPACK
   return XnnpackProviderFactoryCreator::Create(ProviderOptions())->CreateProvider();
+#else
+  return nullptr;
+#endif
+}
+
+std::unique_ptr<IExecutionProvider> DefaultWebNNExecutionProvider() {
+#ifdef USE_WEBNN
+  return WebNNProviderFactoryCreator::Create(ProviderOptions())->CreateProvider();
 #else
   return nullptr;
 #endif

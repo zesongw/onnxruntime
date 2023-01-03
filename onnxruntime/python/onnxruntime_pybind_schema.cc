@@ -76,6 +76,9 @@ void addGlobalSchemaFunctions(pybind11::module& m) {
 #ifdef USE_XNNPACK
             onnxruntime::XnnpackProviderFactoryCreator::Create(ProviderOptions{}),
 #endif
+#ifdef USE_WEBNN
+            onnxruntime::WebNNProviderFactoryCreator::Create(ProviderOptions{}),
+#endif
 #ifdef USE_CANN
             []() {
               OrtCANNProviderOptions provider_options{};

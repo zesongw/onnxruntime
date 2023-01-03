@@ -109,6 +109,7 @@ if (onnxruntime_BUILD_WEBASSEMBLY_STATIC_LIB)
       onnxruntime_optimizer
       onnxruntime_providers
       ${PROVIDERS_XNNPACK}
+      ${PROVIDERS_WEBNN}
       onnxruntime_session
       onnxruntime_util
       re2::re2
@@ -173,12 +174,17 @@ else()
     onnxruntime_optimizer
     onnxruntime_providers
     ${PROVIDERS_XNNPACK}
+    ${PROVIDERS_WEBNN}
     onnxruntime_session
     onnxruntime_util
     re2::re2
   )
   if (onnxruntime_USE_XNNPACK)
     target_link_libraries(onnxruntime_webassembly PRIVATE XNNPACK)
+  endif()
+
+  if(onnxruntime_USE_WEBNN)
+    target_link_libraries(onnxruntime_webassembly PRIVATE onnxruntime_providers_webnn)
   endif()
 
   if (onnxruntime_ENABLE_TRAINING OR onnxruntime_ENABLE_TRAINING_OPS)
@@ -199,7 +205,7 @@ else()
                         -s LLD_REPORT_UNDEFINED                                     \
                         -s VERBOSE=0                                                \
                         -s NO_FILESYSTEM=1                                          \
-                        --closure 1                                                 \
+                        --closure 0                                                 \
                         --no-entry")
 
   if (onnxruntime_EMSCRIPTEN_SETTINGS)
@@ -207,6 +213,10 @@ else()
     set_property(TARGET onnxruntime_webassembly APPEND_STRING PROPERTY LINK_FLAGS
       " -s ${setting}")
     endforeach()
+  endif()
+
+  if (onnxruntime_USE_WEBNN)
+   set_property(TARGET onnxruntime_webassembly APPEND_STRING PROPERTY LINK_FLAGS " --bind")
   endif()
 
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")

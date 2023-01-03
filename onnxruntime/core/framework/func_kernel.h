@@ -4,6 +4,15 @@
 #include "core/framework/op_kernel_context_internal.h"
 #include "core/graph/function.h"
 
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#include <emscripten/val.h>
+#endif
+
+#include "core/session/onnxruntime_cxx_api.h"
+
 namespace onnxruntime {
 
 void* allocate_helper_func(void* allocator, size_t alignment, size_t size);
@@ -45,6 +54,18 @@ class FunctionKernel : public OpKernel {
   }
 
   virtual Status Compute(OpKernelContext* context) const override {
+    emscripten::val console = emscripten::val::global("console");
+    Ort::KernelContext ctx(reinterpret_cast<OrtKernelContext*>(context));
+    console.call<void>("log", emscripten::val("func_kernel"));
+    for (size_t i = 0; i < ctx.GetInputCount(); i++) {
+        auto input_tensor = ctx.GetInput(i);
+        auto tensor_info = input_tensor.GetTensorTypeAndShapeInfo();
+        auto shape = tensor_info.GetShape();
+         std::vector<int> temp(shape.size());
+        transform(shape.begin(),shape.end(),temp.begin(),[](int64_t dim) -> int32_t { return int(dim); });
+
+        console.call<void>("log", i, emscripten::val::array(temp));
+    }
     auto* context_internal = static_cast<OpKernelContextInternal*>(context);
     const OrtApi* api = OrtGetApiBase()->GetApi(ORT_API_VERSION);
     if (api == nullptr) return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "API VERSION ", ORT_API_VERSION, " is invalid.");

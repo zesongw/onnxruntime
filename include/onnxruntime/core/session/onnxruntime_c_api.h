@@ -572,6 +572,15 @@ typedef struct OrtOpenVINOProviderOptions {
   unsigned char enable_dynamic_shapes;  ///< 0 = disabled, nonzero = enabled
 } OrtOpenVINOProviderOptions;
 
+// /** \brief WebNN Provider Options
+// *
+// * \see OrtApi::SessionOptionsAppendExecutionProvider_WebNN
+// */
+// typedef struct OrtWebNNProviderOptions {
+//   unsigned int device_type;            // 0 - auto, 1 - gpu, 2 - cpu
+//   unsigned int power_preference;  // 0 - auto, 1 - high-performance, 2 - low-power
+// } OrtWebNNProviderOptions;
+
 struct OrtApi;
 typedef struct OrtApi OrtApi;
 
@@ -3480,7 +3489,7 @@ struct OrtApi {
    * Currently supported providers:
    *   SNPE
    *   XNNPACK
-   *
+   *   WEBNN
    * Note: If an execution provider has a dedicated SessionOptionsAppendExecutionProvider_<provider name> function
    *       that should be used to add it.
    *
@@ -3501,6 +3510,9 @@ struct OrtApi {
    * XNNPACK supported keys:
    *   "intra_op_num_threads": number of thread-pool size to use for XNNPACK execution provider.
    *
+   * WEBNN supported keys:
+   *   "deviceType": webnn execute hardware, options: "auto","cpu","gpu"
+   *   "powerPreference": power option for webnn backend， options： "auto","low-power","high-performance"
    * \since Version 1.12.
    */
   ORT_API2_STATUS(SessionOptionsAppendExecutionProvider, _In_ OrtSessionOptions* options,

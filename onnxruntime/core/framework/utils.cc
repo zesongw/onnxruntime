@@ -542,7 +542,7 @@ static common::Status ExecuteGraphImpl(const SessionState& session_state,
       p_exec = &par_executor.value();
     }
   }
-
+  LOGS(logger, WARNING) << feeds.size();
   const auto& feeds_fetches_info = feeds_fetches_manager.GetFeedsFetchesInfo();
   const auto& device_copy_checks = feeds_fetches_manager.GetDeviceCopyChecks();
 

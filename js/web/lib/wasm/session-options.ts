@@ -58,6 +58,9 @@ const setExecutionProviders =
           case 'xnnpack':
             epName = 'XNNPACK';
             break;
+          case 'webnn':
+            epName = 'WEBNN';
+            break;
           case 'wasm':
           case 'cpu':
             continue;

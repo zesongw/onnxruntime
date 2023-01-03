@@ -484,6 +484,10 @@ if(onnxruntime_USE_COREML)
   endif()
 endif()
 
+if(onnxruntime_USE_WEBNN)
+  list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_webnn)
+endif()
+
 if(onnxruntime_USE_ACL)
   list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_acl)
 endif()
@@ -509,6 +513,7 @@ set(ONNXRUNTIME_TEST_LIBS
     ${PROVIDERS_ARMNN}
     ${PROVIDERS_COREML}
     # ${PROVIDERS_TVM}
+    ${PROVIDERS_WEBNN}
     ${PROVIDERS_XNNPACK}
     onnxruntime_optimizer
     onnxruntime_providers
@@ -584,6 +589,13 @@ if(onnxruntime_USE_XNNPACK)
   list(APPEND onnxruntime_test_framework_libs onnxruntime_providers_xnnpack)
   list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_xnnpack)
   list(APPEND onnxruntime_test_providers_libs onnxruntime_providers_xnnpack)
+endif()
+
+if(onnxruntime_USE_WEBNN)
+  list(APPEND onnxruntime_test_framework_src_patterns  ${TEST_SRC_DIR}/providers/webnn/*)
+  list(APPEND onnxruntime_test_framework_libs onnxruntime_providers_webnn)
+  list(APPEND onnxruntime_test_providers_dependencies onnxruntime_providers_webnn)
+  list(APPEND onnxruntime_test_providers_libs onnxruntime_providers_webnn)
 endif()
 
 if(WIN32)

@@ -141,6 +141,9 @@ endif()
 if (onnxruntime_USE_XNNPACK)
   set(PROVIDERS_XNNPACK onnxruntime_providers_xnnpack)
 endif()
+if(onnxruntime_USE_WEBNN)
+  set(PROVIDERS_WEBNN onnxruntime_providers_webnn)
+endif()
 if(onnxruntime_USE_SNPE)
     include(onnxruntime_snpe_provider.cmake)
 endif()
@@ -916,6 +919,80 @@ if (onnxruntime_USE_COREML)
             RUNTIME   DESTINATION ${CMAKE_INSTALL_BINDIR}
             FRAMEWORK DESTINATION ${CMAKE_INSTALL_BINDIR})
   endif()
+endif()
+
+if (onnxruntime_USE_WEBNN)
+  if (NOT onnxruntime_BUILD_WEBASSEMBLY)
+    if (NOT WEBNN_NATIVE_DIR)
+      message(FATAL_ERROR "WEBNN_NATIVE_DIR required for onnxruntime_USE_WEBNN")
+    endif()
+  endif()
+  set(WEBNN_NATIVE_INCLUDE_DIR ${WEBNN_NATIVE_DIR}/gen/include)
+  set(WEBNN_NATIVE_SRC_INCLUDE_DIR ${WEBNN_NATIVE_DIR}/../../include)
+  if (onnxruntime_MINIMAL_BUILD AND NOT onnxruntime_EXTENDED_MINIMAL_BUILD)
+    message(FATAL_ERROR "WebNN EP can not be used in a basic minimal build. Please build with '--minimal_build extended'")
+  endif()
+
+  if (WIN32)
+    set(DISABLED_WARNINGS_FOR_WEBNN /wd4305 /wd4244)
+  endif()
+
+  add_compile_definitions(USE_WEBNN=1)
+
+  # These are shared utils,
+  # TODO, move this to a separated lib when used by EPs other than NNAPI and CoreML
+  file(GLOB_RECURSE onnxruntime_providers_shared_utils_cc_srcs CONFIGURE_DEPENDS
+    "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.h"
+    "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.cc"
+  )
+
+  file(GLOB
+    onnxruntime_providers_webnn_cc_srcs_top CONFIGURE_DEPENDS
+    "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.h"
+    "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.cc"
+  )
+
+  # Add builder source code
+  file(GLOB_RECURSE
+    onnxruntime_providers_webnn_cc_srcs_nested CONFIGURE_DEPENDS
+    "${ONNXRUNTIME_ROOT}/core/providers/webnn/builders/*.h"
+    "${ONNXRUNTIME_ROOT}/core/providers/webnn/builders/*.cc"
+  )
+
+  if (NOT onnxruntime_BUILD_WEBASSEMBLY)
+    file(GLOB
+      webnn_cpp_src
+      "${WEBNN_NATIVE_DIR}/gen/src/webnn/webnn_cpp.cpp"
+    )
+  endif()
+
+  set(onnxruntime_providers_webnn_cc_srcs
+    ${onnxruntime_providers_webnn_cc_srcs_top}
+    ${onnxruntime_providers_webnn_cc_srcs_nested}
+    ${onnxruntime_providers_shared_utils_cc_srcs}
+  )
+
+  source_group(TREE ${ONNXRUNTIME_ROOT}/core FILES ${onnxruntime_providers_webnn_cc_srcs})
+  onnxruntime_add_static_library(onnxruntime_providers_webnn ${onnxruntime_providers_webnn_cc_srcs} ${webnn_cpp_src})
+  onnxruntime_add_include_to_target(onnxruntime_providers_webnn onnxruntime_common onnxruntime_framework onnx onnx_proto protobuf::libprotobuf-lite flatbuffers)
+  if (NOT onnxruntime_BUILD_WEBASSEMBLY)
+    link_directories(onnxruntime_providers_webnn ${WEBNN_NATIVE_DIR})
+  endif()
+  if (NOT onnxruntime_BUILD_WEBASSEMBLY)
+    if (WIN32)
+      target_link_libraries(onnxruntime_providers_webnn PRIVATE webnn_native.dll.lib webnn_proc.dll.lib)
+    else()
+      target_link_libraries(onnxruntime_providers_webnn PRIVATE -lwebnn_native -lwebnn_proc)
+    endif()
+  # else()
+    # target_link_libraries(onnxruntime_providers_webnn PRIVATE -lwebnn_cpp)
+  endif()
+  add_dependencies(onnxruntime_providers_webnn onnx ${onnxruntime_EXTERNAL_DEPENDENCIES})
+  set_target_properties(onnxruntime_providers_webnn PROPERTIES CXX_STANDARD_REQUIRED ON)
+  set_target_properties(onnxruntime_providers_webnn PROPERTIES FOLDER "ONNXRuntime")
+  target_include_directories(onnxruntime_providers_webnn PRIVATE ${ONNXRUNTIME_ROOT} ${WEBNN_NATIVE_INCLUDE_DIR} ${WEBNN_NATIVE_SRC_INCLUDE_DIR})
+  set_target_properties(onnxruntime_providers_webnn PROPERTIES LINKER_LANGUAGE CXX)
+  target_compile_options(onnxruntime_providers_webnn PRIVATE ${DISABLED_WARNINGS_FOR_WEBNN})
 endif()
 
 if (onnxruntime_USE_NNAPI_BUILTIN)

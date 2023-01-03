@@ -765,6 +765,10 @@ std::unique_ptr<IExecutionProvider> CreateExecutionProviderInstance(
 #if defined(USE_XNNPACK)
     return onnxruntime::XnnpackProviderFactoryCreator::Create(ProviderOptions{})->CreateProvider();
 #endif
+  } else if (type == kWebNNExecutionProvider) {
+#if defined(USE_WEBNN)
+    return onnxruntime::WebNNProviderFactoryCreator::Create(ProviderOptions{})->CreateProvider();
+#endif
   } else if (type == kCannExecutionProvider) {
 #ifdef USE_CANN
     if (auto* cann_provider_info = TryGetProviderInfo_CANN()) {

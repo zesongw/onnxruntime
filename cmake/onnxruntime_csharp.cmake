@@ -50,6 +50,10 @@ if (onnxruntime_USE_XNNPACK)
   STRING(APPEND CSHARP_PREPROCESSOR_DEFINES "USE_XNNPACK;")
 endif()
 
+if (onnxruntime_USE_WEBNN)
+  STRING(APPEND CSHARP_PREPROCESSOR_DEFINES "USE_WEBNN;")
+endif()
+
 include(CSharpUtilities)
 
 # generate Directory.Build.props
