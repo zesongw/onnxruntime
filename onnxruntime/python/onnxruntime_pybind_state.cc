@@ -780,6 +780,10 @@ std::unique_ptr<IExecutionProvider> CreateExecutionProviderInstance(
                cit == provider_options_map.end() ? ProviderOptions{} : cit->second, &session_options)
         ->CreateProvider();
 #endif
+  } else if (type == kWebNNExecutionProvider) {
+#if defined(USE_WEBNN)
+    return onnxruntime::WebNNProviderFactoryCreator::Create(ProviderOptions{})->CreateProvider();
+#endif
   } else if (type == kCannExecutionProvider) {
 #ifdef USE_CANN
     if (auto* cann_provider_info = TryGetProviderInfo_CANN()) {
@@ -1328,7 +1332,7 @@ Applies to session load, initialization, etc. Default is 0.)pbdoc")
             ORT_THROW("External initializers are not supported in this build.");
 #endif
       });
-      
+
   py::class_<RunOptions>(m, "RunOptions", R"pbdoc(Configuration information for a single Run.)pbdoc")
       .def(py::init())
       .def_readwrite("log_severity_level", &RunOptions::run_log_severity_level,

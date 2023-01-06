@@ -4,7 +4,7 @@
 #include "api.h"
 
 #include "core/session/onnxruntime_cxx_api.h"
-
+#include "core/common/logging/logging.h"
 #include <iostream>
 #include <vector>
 
@@ -358,6 +358,7 @@ int OrtRun(OrtSession* session,
            const char** input_names, const ort_tensor_handle_t* inputs, size_t input_count,
            const char** output_names, size_t output_count, ort_tensor_handle_t* outputs,
            OrtRunOptions* run_options) {
+  LOGS_DEFAULT(INFO) << "Input count is " << input_count;
   return CHECK_STATUS(Run, session, run_options, input_names, inputs, input_count, output_names, output_count, outputs);
 }
 
