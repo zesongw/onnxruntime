@@ -954,13 +954,8 @@ if (onnxruntime_USE_COREML)
 endif()
 
 if (onnxruntime_USE_WEBNN)
-
   if (onnxruntime_MINIMAL_BUILD AND NOT onnxruntime_EXTENDED_MINIMAL_BUILD)
     message(FATAL_ERROR "WebNN EP can not be used in a basic minimal build. Please build with '--minimal_build extended'")
-  endif()
-
-  if (WIN32)
-    set(DISABLED_WARNINGS_FOR_WEBNN /wd4305 /wd4244)
   endif()
 
   add_compile_definitions(USE_WEBNN=1)
@@ -1001,7 +996,6 @@ if (onnxruntime_USE_WEBNN)
   set_target_properties(onnxruntime_providers_webnn PROPERTIES FOLDER "ONNXRuntime")
   target_include_directories(onnxruntime_providers_webnn PRIVATE ${ONNXRUNTIME_ROOT})
   set_target_properties(onnxruntime_providers_webnn PROPERTIES LINKER_LANGUAGE CXX)
-  target_compile_options(onnxruntime_providers_webnn PRIVATE ${DISABLED_WARNINGS_FOR_WEBNN})
 endif()
 
 if (onnxruntime_USE_NNAPI_BUILTIN)
