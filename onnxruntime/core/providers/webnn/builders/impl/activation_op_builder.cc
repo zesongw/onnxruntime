@@ -86,8 +86,7 @@ void CreateActivationOpBuilder(const std::string& op_type, OpBuilderRegistration
           "Relu",
           "LeakyRelu",
           "Sigmoid",
-          "Tanh"
-      };
+          "Tanh"};
 
   op_registrations.builders.push_back(std::make_unique<ActivationOpBuilder>());
   for (const auto& type : op_types) {

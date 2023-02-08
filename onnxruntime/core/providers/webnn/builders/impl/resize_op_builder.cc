@@ -127,8 +127,8 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     ORT_RETURN_IF_NOT(GetResizeOutputSizes(initializers, node, output_sizes, logger),
                       "Error getting resize output_sizes");
     std::transform(output_sizes.cbegin(), output_sizes.cend(),
-                 std::back_inserter(sizes),
-                 [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
+                   std::back_inserter(sizes),
+                   [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
     sizes_hw = {sizes[2], sizes[3]};
     options.set("sizes", emscripten::val::array(sizes_hw));
   }

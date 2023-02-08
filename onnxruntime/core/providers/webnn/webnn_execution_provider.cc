@@ -40,7 +40,7 @@ WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_device_flags, uint
       {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
   std::unordered_map<uint32_t, std::string> power_preference_name_s = {
       {0, "auto"}, {1, "high-performance"}, {2, "low-power"}};
-        std::string device_type_name_ = device_type_name_s[webnn_device_flags];
+  std::string device_type_name_ = device_type_name_s[webnn_device_flags];
   std::string power_preference_name_ = power_preference_name_s[webnn_power_flags];
   thread_local const emscripten::val ml = emscripten::val::global("navigator")["ml"];
   if (!ml.as<bool>()) {
@@ -63,7 +63,7 @@ WebNNExecutionProvider::~WebNNExecutionProvider() {}
 
 std::vector<std::unique_ptr<ComputeCapability>>
 WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_viewer,
-                                       const IKernelLookup& /*kernel_registries*/) const {
+                                      const IKernelLookup& /*kernel_registries*/) const {
   std::vector<std::unique_ptr<ComputeCapability>> result;
 
   // We do not run WebNN EP on subgraph, instead we cover this in the control flow nodes
@@ -195,14 +195,14 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
     LOGS(logger, INFO) << summary_msg;
   }
   emscripten::val console = emscripten::val::global("console");
-  if(!console.as<bool>()){
+  if (!console.as<bool>()) {
     LOGS(logger, INFO) << "Can not get console";
   }
   return result;
 }
 
 common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGraph>& fused_nodes_and_graphs,
-                                                std::vector<NodeComputeInfo>& node_compute_funcs) {
+                                               std::vector<NodeComputeInfo>& node_compute_funcs) {
   for (const auto& fused_node_and_graph : fused_nodes_and_graphs) {
     Node& fused_node = fused_node_and_graph.fused_node;
     const onnxruntime::GraphViewer& graph_viewer(fused_node_and_graph.filtered_graph);
@@ -271,7 +271,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
         if (shape.empty())
           shape.push_back(1);
         std::vector<int> temp(shape.size());
-        transform(shape.begin(),shape.end(),temp.begin(),[](int64_t dim) -> int32_t { return int(dim); });
+        transform(shape.begin(), shape.end(), temp.begin(), [](int64_t dim) -> int32_t { return int(dim); });
         const void* inputBuffer = const_cast<void*>(input_tensor.GetTensorRawData());
         inputs.emplace(
             input_name,

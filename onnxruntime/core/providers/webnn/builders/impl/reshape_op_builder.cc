@@ -51,16 +51,17 @@ Status ReshapeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                         : target_shape_tensor.int64_data().data();
 
   const auto size = target_shape_tensor.dims()[0];
-  TensorShapeVector  target_shape{raw_target_shape, raw_target_shape + size};
+  TensorShapeVector target_shape{raw_target_shape, raw_target_shape + size};
   std::vector<int64_t> input_shape;
   ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
   ReshapeHelper helper(TensorShape(input_shape), target_shape);
   emscripten::val input = model_builder.GetOperand(input_defs[0]->Name());
   std::vector<int32_t> new_shape;
   std::transform(target_shape.cbegin(), target_shape.cend(),
-                     std::back_inserter(new_shape),
-                     [](int64_t dim) -> uint32_t { return SafeInt<int32_t>(dim); });
-  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("reshape", input, emscripten::val::array(new_shape));
+                 std::back_inserter(new_shape),
+                 [](int64_t dim) -> uint32_t { return SafeInt<int32_t>(dim); });
+  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("reshape",
+                                                                            input, emscripten::val::array(new_shape));
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }

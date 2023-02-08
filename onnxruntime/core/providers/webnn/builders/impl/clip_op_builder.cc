@@ -46,7 +46,8 @@ Status ClipOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   const auto& output_name = node.OutputDefs()[0]->Name();
   emscripten::val options = emscripten::val::object();
   float minValue, maxValue;
-  ORT_RETURN_IF_NOT(GetClipMinMax(model_builder.GetInitializerTensors(), node, minValue, maxValue, logger), "GetClipMinMax failed");
+  ORT_RETURN_IF_NOT(GetClipMinMax(model_builder.GetInitializerTensors(), node, minValue, maxValue, logger),
+                    "GetClipMinMax failed");
   options.set("minValue", minValue);
   options.set("maxValue", maxValue);
   emscripten::val input = model_builder.GetOperand(input_name);

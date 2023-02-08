@@ -62,7 +62,6 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   const auto dilations = helper.Get("dilations", std::vector<int32_t>{1, 1});
   options.set("dilations", emscripten::val::array(dilations));
 
-
   // Add Padding
   // Usually using autopadding is more efficient than using explicit padding
   // Try to see if we can map explicit padding to auto padding
@@ -90,7 +89,7 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
 
   const auto ceil_mode = helper.Get("ceil_mode", 0);
   options.set("roundingType", ceil_mode == 0 ? emscripten::val("floor")
-                                        : emscripten::val("ceil"));
+                                             : emscripten::val("ceil"));
 
   emscripten::val output = emscripten::val::object();
   if (is_average_pool) {

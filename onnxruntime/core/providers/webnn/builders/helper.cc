@@ -57,7 +57,9 @@ bool IsInputSupported(const NodeArg& input, const std::string& parent_name, cons
   return true;
 }
 
-std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer, const emscripten::val& wnn_builder_, const logging::Logger& logger) {
+std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer,
+                                                      const emscripten::val& wnn_builder_,
+                                                      const logging::Logger& logger) {
   std::vector<std::vector<size_t>> supported_node_groups;
 
   for (const auto* input : graph_viewer.GetInputs()) {
@@ -99,7 +101,6 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
 
   return supported_node_groups;
 }
-
 
 }  // namespace webnn
 }  // namespace onnxruntime

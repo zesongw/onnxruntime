@@ -25,7 +25,6 @@ ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logge
       wnn_builder_(builder) {}
 
 Status ModelBuilder::Initialize() {
-
   PreprocessInitializers();
   PreprocessActivations();
   ORT_RETURN_IF_ERROR(RegisterInitializers());
@@ -55,13 +54,13 @@ void ModelBuilder::PreprocessInitializers() {
   }
 }
 
-  emscripten::val GetClampOperator(
-      const emscripten::val& builder, float min_value, float max_value) {
-    emscripten::val options = emscripten::val::object();
-    options.set("minValue", min_value);
-    options.set("maxValue", max_value);
-    return builder.call<emscripten::val>("clamp", options);
-  }
+emscripten::val GetClampOperator(
+    const emscripten::val& builder, float min_value, float max_value) {
+  emscripten::val options = emscripten::val::object();
+  options.set("minValue", min_value);
+  options.set("maxValue", max_value);
+  return builder.call<emscripten::val>("clamp", options);
+}
 
 void ModelBuilder::PreprocessActivations() {
   const auto& node_indices = graph_viewer_.GetNodesInTopologicalOrder();
@@ -71,14 +70,12 @@ void ModelBuilder::PreprocessActivations() {
 
     if (op_type == "Relu") {
       activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("relu"));
-    }
-    else if (op_type == "LeakyRelu") {
+    } else if (op_type == "LeakyRelu") {
       NodeAttrHelper helper(*node);
       emscripten::val options = emscripten::val::object();
       options.set("alpha", helper.Get("alpha", (float)0.0));
       activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("leakyRelu", options));
-    }
-    else if (op_type == "Sigmoid") {
+    } else if (op_type == "Sigmoid") {
       activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("sigmoid"));
     } else if (op_type == "Tanh") {
       activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("tanh"));
@@ -96,7 +93,6 @@ Status ModelBuilder::RegisterInitializers() {
     const auto& name = tensor.name();
     if (Contains(skipped_initializers_, name))
       continue;
-
 
     const auto& shape = tensor.dims();
     std::vector<int32_t> dims;
@@ -119,13 +115,13 @@ Status ModelBuilder::RegisterInitializers() {
       ORT_RETURN_IF_ERROR(onnxruntime::utils::UnpackInitializerData(tensor, unpacked_tensor));
       auto num_elements = SafeInt<size_t>(Product(tensor.dims()));
       desc.set("type", emscripten::val("float32"));
-      emscripten::val view{ emscripten::typed_memory_view(num_elements, reinterpret_cast<float*>(unpacked_tensor.data())) };
+      emscripten::val view{emscripten::typed_memory_view(num_elements, reinterpret_cast<float*>(unpacked_tensor.data()))};
       operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
     } else {
       // TODO: support other type
       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
-                              "The initializer of graph has unsupported type, name: ",
-                              tensor.name(), " type: ", data_type);
+                             "The initializer of graph has unsupported type, name: ",
+                             tensor.name(), " type: ", data_type);
     }
     wnn_operands_.insert(std::make_pair(name, operand));
   }
@@ -174,7 +170,8 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
     }
   }
 
-  emscripten::val desc = emscripten::val::object();;
+  emscripten::val desc = emscripten::val::object();
+
   desc.set("dimensions", emscripten::val::array(dims));
 
   int32_t data_type;
@@ -279,7 +276,6 @@ emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& ou
       if (&output == dst_input) {
         return emscripten::val::null();
       }
-
     }
   }
 

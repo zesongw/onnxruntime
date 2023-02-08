@@ -44,7 +44,7 @@ Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
     const auto transA = helper.Get("transA", 0);
     options.set("aTranspose", emscripten::val(transA == 1));
     const auto transB = helper.Get("transB", 0);
-    options.set("bTranspose",  emscripten::val(transB == 1));
+    options.set("bTranspose", emscripten::val(transB == 1));
     const auto alpha = helper.Get("alpha", 1.0f);
     const auto beta = helper.Get("beta", 1.0f);
     options.set("alpha", alpha);
@@ -52,7 +52,7 @@ Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
 
     // Add bias if present
     if (input_defs.size() > 2) {
-      options.set("c",model_builder.GetOperand(node.InputDefs()[c_idx]->Name()));
+      options.set("c", model_builder.GetOperand(node.InputDefs()[c_idx]->Name()));
     }
 
     output = model_builder.GetBuilder().call<emscripten::val>("gemm", a, b, options);

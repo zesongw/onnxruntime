@@ -17,8 +17,8 @@ class IOpBuilder;
 
 class ModelBuilder {
  public:
-   ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger,
-                const emscripten::val& context, const emscripten::val& builder);
+  ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger,
+               const emscripten::val& context, const emscripten::val& builder);
   ~ModelBuilder() = default;
 
   Status Compile(std::unique_ptr<Model>& model) ORT_MUST_USE_RESULT;
@@ -26,7 +26,6 @@ class ModelBuilder {
   // Accessors for members
   const GraphViewer& GetGraphViewer() const { return graph_viewer_; }
   const InitializedTensorSet& GetInitializerTensors() const { return graph_viewer_.GetAllInitializedTensors(); }
-
 
   const emscripten::val& GetBuilder() const { return wnn_builder_; }
   const emscripten::val& GetContext() const { return wnn_context_; }

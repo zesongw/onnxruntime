@@ -26,7 +26,7 @@ Model::~Model() {}
 
 Status Model::Predict(const std::unordered_map<std::string, OnnxTensorData>& inputs,
                       const std::unordered_map<std::string, OnnxTensorData>& outputs) {
-  for (const auto& input: inputs) {
+  for (const auto& input : inputs) {
     const std::string& name = input.first;
     const struct OnnxTensorData tensor = input.second;
     if (tensor.tensor_info.data_type != ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
@@ -35,10 +35,10 @@ Status Model::Predict(const std::unordered_map<std::string, OnnxTensorData>& inp
                              name, " type: ", tensor.tensor_info.data_type);
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
-    emscripten::val view{ emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer)) };
+    emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
     wnn_inputs_.set(name, view);
   }
-  for (const auto& output: outputs) {
+  for (const auto& output : outputs) {
     const std::string& name = output.first;
     const struct OnnxTensorData tensor = output.second;
     if (tensor.tensor_info.data_type != ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
@@ -47,7 +47,7 @@ Status Model::Predict(const std::unordered_map<std::string, OnnxTensorData>& inp
                              name, " type: ", tensor.tensor_info.data_type);
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
-    emscripten::val view{ emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer)) };
+    emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
     wnn_outputs_.set(name, view);
   }
 

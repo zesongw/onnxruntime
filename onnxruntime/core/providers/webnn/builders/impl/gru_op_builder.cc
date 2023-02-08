@@ -125,7 +125,7 @@ Status GruOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const No
   }
   options.set("activations", activationOperators);
   output = model_builder.GetBuilder().call<emscripten::val>("gru", input, weight, recurrentWeight, (long)steps,
-                                          (long)hiddenSize, options);
+                                                            (long)hiddenSize, options);
   // Reverse outputs and insert to model builder
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output[1]));
   model_builder.AddOperand(node.OutputDefs()[1]->Name(), std::move(output[0]));

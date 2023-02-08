@@ -45,7 +45,8 @@ Status BatchNormalizationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_bu
   options.set("epsilon", helper.Get("epsilon", 1e-5f));
   options.set("activation", model_builder.FindActivation(node, *node.OutputDefs()[0]));
 
-  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("batchNormalization", input, mean, variance, options);
+  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("batchNormalization", input,
+                                                                            mean, variance, options);
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
 
   return Status::OK();

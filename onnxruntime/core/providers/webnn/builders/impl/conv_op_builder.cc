@@ -28,11 +28,11 @@ class ConvOpBuilder : public BaseOpBuilder {
 
 // Helper functions
 common::Status SetConvBaseOptions(ModelBuilder& model_builder,
-                        const Node& node, emscripten::val& options,
-                        const std::vector<int32_t>& strides,
-                        const std::vector<int32_t>& dilations,
-                        const std::vector<int32_t>& pads,
-                        const logging::Logger& logger) {
+                                  const Node& node, emscripten::val& options,
+                                  const std::vector<int32_t>& strides,
+                                  const std::vector<int32_t>& dilations,
+                                  const std::vector<int32_t>& pads,
+                                  const logging::Logger& logger) {
   NodeAttrHelper helper(node);
   const auto group = helper.Get("group", static_cast<int32_t>(1));
   const auto& input_defs = node.InputDefs();
@@ -70,10 +70,10 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
     options.set("bias", model_builder.GetOperand(input_defs[2]->Name()));
   }
   emscripten::val activation = model_builder.FindActivation(node, *node.OutputDefs()[0]);
-  if(emscripten::val::null() != activation) {
+  if (emscripten::val::null() != activation) {
     options.set("activation", activation);
   }
-  
+
   return Status::OK();
 }
 
