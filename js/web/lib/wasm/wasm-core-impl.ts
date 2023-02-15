@@ -425,7 +425,7 @@ export const endProfiling = (sessionId: number): void => {
 export const extractTransferableBuffers = (tensors: readonly SerializableTensor[]): ArrayBufferLike[] => {
   const buffers: ArrayBufferLike[] = [];
   for (const tensor of tensors) {
-    const data = tensor[2];
+    const data = tensor[2].slice(0);
     if (!Array.isArray(data) && data.buffer) {
       buffers.push(data.buffer);
     }
