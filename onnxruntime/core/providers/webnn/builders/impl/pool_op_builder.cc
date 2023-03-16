@@ -61,6 +61,7 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   options.set("strides", emscripten::val::array(strides));
   const auto dilations = helper.Get("dilations", std::vector<int32_t>{1, 1});
   options.set("dilations", emscripten::val::array(dilations));
+  options.set("layout", emscripten::val("nhwc"));
 
   // Add Padding
   // Usually using autopadding is more efficient than using explicit padding

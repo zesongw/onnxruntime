@@ -17,6 +17,10 @@ class TransposeOpBuilder : public BaseOpBuilder {
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
+  // bool IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
+  //                                            const logging::Logger& logger) const override {
+  //   return false;
+  // }
 };
 
 // Add operator related

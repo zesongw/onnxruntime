@@ -55,6 +55,7 @@ Status ConcatOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
 // Operator support related
 bool ConcatOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& /* initializers */, const Node& node,
                                         const logging::Logger& logger) const {
+                                          // return false;
   const auto& input_defs = node.InputDefs();
   if (input_defs.size() < 2) {
     LOGS(logger, VERBOSE) << "Concat only support 2+ inputs, actual number of inputs: " << input_defs.size();

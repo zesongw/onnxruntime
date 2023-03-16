@@ -112,6 +112,11 @@ bool GemmOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, 
 
       size_t c_dim = c_shape.size();
 
+      if (c_dim > 1) {
+        // TODO: Supports other shape of C
+        // Currently WebNN implementation in Chromium only supports 1-D C
+        return false;
+      }
       if (c_dim == 0) {
         LOGS(logger, VERBOSE) << "C of Gemm is a scalar";
       } else {

@@ -129,11 +129,11 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     std::transform(output_sizes.cbegin(), output_sizes.cend(),
                    std::back_inserter(sizes),
                    [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
-    sizes_hw = {sizes[2], sizes[3]};
+    sizes_hw = {sizes[1], sizes[2]};
     options.set("sizes", emscripten::val::array(sizes_hw));
   }
 
-  std::vector<int32_t> axes = {2, 3};
+  std::vector<int32_t> axes = {1, 2};
   options.set("axes", emscripten::val::array(axes));
   emscripten::val input = model_builder.GetOperand(input_defs[0]->Name());
   emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("resample2d", input, options);
@@ -252,13 +252,14 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
       if (!GetResizeOutputSizes(initializers, node, output_sizes, logger))
         return false;
 
+      bool is_NHWC = input_shape[3] == output_sizes[3];
       auto output_size_n = output_sizes[0];
-      auto output_size_c = output_sizes[1];
-      if (output_size_n != input_shape[0] || output_size_c != input_shape[1]) {
+      const int c_idx = is_NHWC ? 3 : 1;
+      if (output_size_n != input_shape[0] || output_sizes[c_idx] != input_shape[c_idx]) {
         LOGS(logger, VERBOSE) << "Output sizes of N/C chanel should match the input sizes, "
                               << "Resize of N/C channels are not supported"
                               << ", input_size_n, " << input_shape[0] << ", output_size_n, " << output_size_n
-                              << ". input_size_c, " << input_shape[1] << ", output_size_c, " << output_size_c;
+                              << ". input_size_c, " << input_shape[c_idx] << ", output_size_c, " << output_sizes[c_idx];
         return false;
       }
 

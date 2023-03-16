@@ -6,7 +6,6 @@
 #include "helper.h"
 #include <core/graph/graph_viewer.h>
 
-#include "core/providers/common.h"
 #include "op_builder_factory.h"
 
 namespace onnxruntime {
@@ -76,7 +75,8 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
     const auto* node(graph_viewer.GetNode(node_idx));
     bool supported = false;
     // Firstly check if platform supports the WebNN op
-    if (op_map.find(node->OpType()) != op_map.end() && wnn_builder_[op_map[node->OpType()]].as<bool>()) {
+    if (CheckDependency(node->OpType(), wnn_builder_)) {
+      LOGS(logger, VERBOSE) << "Operator type: [" << node->OpType() << "] is supported by browser";
       supported = IsNodeSupported(*node, graph_viewer, logger);
     }
 

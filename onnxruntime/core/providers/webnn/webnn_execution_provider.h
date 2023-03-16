@@ -23,8 +23,13 @@ class WebNNExecutionProvider : public IExecutionProvider {
   GetCapability(const onnxruntime::GraphViewer& graph_viewer,
                 const IKernelLookup& /*kernel_registries*/) const override;
 
+  DataLayout GetPreferredLayout() const override { return DataLayout::NHWC; }
+
   // We implement the Compile that takes FusedNodeAndGraph instances
   FusionStyle GetFusionStyle() const override { return FusionStyle::FilteredGraphViewer; }
+
+  // WebNN does not support concurrent execution of a kernel
+  bool ConcurrentRunSupported() const override { return false; }
 
 #if !defined(ORT_MINIMAL_BUILD) || defined(ORT_EXTENDED_MINIMAL_BUILD)
   common::Status Compile(const std::vector<FusedNodeAndGraph>& fused_nodes,

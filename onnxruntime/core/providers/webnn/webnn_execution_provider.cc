@@ -194,10 +194,7 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
   } else {
     LOGS(logger, INFO) << summary_msg;
   }
-  emscripten::val console = emscripten::val::global("console");
-  if (!console.as<bool>()) {
-    LOGS(logger, INFO) << "Can not get console";
-  }
+
   return result;
 }
 

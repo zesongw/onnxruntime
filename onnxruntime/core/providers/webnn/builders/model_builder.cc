@@ -261,11 +261,14 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   return Status::OK();
 }
 
-emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& output) {
+emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& output, const std::unordered_set<std::string> supported_nodes) {
   emscripten::val fused_op = emscripten::val::null();
   for (auto it = node.OutputEdgesBegin(), end = node.OutputEdgesEnd(); it != end; ++it) {
     const auto& dst_node = it->GetNode();
     const auto* dst_input = dst_node.InputDefs()[it->GetDstArgIndex()];
+    if (!Contains(supported_nodes, dst_node.OpType())) {
+      return emscripten::val::null();
+    }
     if (Contains(activation_nodes_, dst_node.Index())) {
       if (&output == dst_input) {
         fused_op = activation_nodes_.at(dst_node.Index());

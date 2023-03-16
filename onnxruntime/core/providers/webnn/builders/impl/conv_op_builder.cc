@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 #include "core/common/safeint.h"
+#include "core/optimizer/initializer.h"
 #include "core/providers/common.h"
 #include "core/providers/shared/utils/utils.h"
 #include "core/providers/webnn/builders/helper.h"
@@ -16,6 +17,9 @@ namespace webnn {
 
 class ConvOpBuilder : public BaseOpBuilder {
   // Add operator related
+ public:
+  void AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const override;
+
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
@@ -25,6 +29,12 @@ class ConvOpBuilder : public BaseOpBuilder {
   bool IsOpSupportedImpl(const InitializedTensorSet& /* initializers */, const Node& /* node */,
                          const logging::Logger& /* logger */) const override;
 };
+
+void ConvOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const {
+  // skip the weight for conv as we need to transpose
+  model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());  // W
+  model_builder.AddInputToSkip(node.InputDefs()[1]->Name());
+}
 
 // Helper functions
 common::Status SetConvBaseOptions(ModelBuilder& model_builder,
@@ -41,7 +51,7 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
 
   options.set("strides", emscripten::val::array(strides));
   options.set("dilations", emscripten::val::array(dilations));
-  options.set("inputLayout", emscripten::val("nchw"));
+  options.set("inputLayout", emscripten::val("nhwc"));
   options.set("groups", group);
   // Add Padding
   // Usually using autopadding is more efficient than using explicit padding
@@ -69,11 +79,90 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
   if (input_defs.size() > 2) {
     options.set("bias", model_builder.GetOperand(input_defs[2]->Name()));
   }
-  emscripten::val activation = model_builder.FindActivation(node, *node.OutputDefs()[0]);
+  std::unordered_set<std::string> supported_nodes{"Clip", "Relu"};
+  emscripten::val activation = model_builder.FindActivation(node, *node.OutputDefs()[0], supported_nodes);
   if (emscripten::val::null() != activation) {
     options.set("activation", activation);
   }
 
+  return Status::OK();
+}
+
+Status AddInitializerInNewLayout(ModelBuilder& model_builder,
+                                 const std::string& name,
+                                 bool is_conv) {
+  const auto& tensor = *model_builder.GetInitializerTensors().at(name);
+  auto data_type = tensor.data_type();
+  if (data_type != ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
+    return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
+                           "The initializer of graph has unsupported type, name: ",
+                           tensor.name(), " type: ", data_type);
+  }
+
+  const auto& shape = tensor.dims();
+  std::vector<uint32_t> dims;
+  std::transform(shape.cbegin(), shape.cend(),
+                 std::back_inserter(dims),
+                 [](int64_t dim) -> int32_t { return SafeInt<int32_t>(dim); });
+
+  ORT_RETURN_IF_NOT(dims.size() == 4,
+                    "The initializer is not 4D: ", name, " actual dim ", dims.size());
+  const uint8_t* src = nullptr;
+  Initializer unpacked_tensor(tensor, model_builder.GetGraphViewer().ModelPath());
+  src = unpacked_tensor.DataAsByteSpan().data();
+  const auto out_t = dims[0], in_t = dims[1],
+             h_t = dims[2], w_t = dims[3];
+  std::vector<uint32_t> dest_shape;
+  if (is_conv == 1)
+    dest_shape = {out_t, h_t, w_t, in_t};  // L_0231
+  else
+    dest_shape = {in_t, h_t, w_t, out_t};  // L_1230 for depthwise conv weight
+
+  SafeInt<size_t> num_elements = SafeInt<size_t>(Product(dest_shape));
+
+  size_t element_size = 4;
+  uint8_t* buffer = new uint8_t[num_elements * element_size];
+
+
+  for (uint32_t out = 0; out < out_t; out++) {
+    for (uint32_t in = 0; in < in_t; in++) {
+      for (uint32_t h = 0; h < h_t; h++) {
+        for (uint32_t w = 0; w < w_t; w++) {
+          auto onnx_idx = out * in_t * h_t * w_t +
+                          in * h_t * w_t +
+                          h * w_t +
+                          w;
+
+          uint32_t nnapi_idx;
+          if (is_conv == 1) {  // L_0231
+            nnapi_idx = out * h_t * w_t * in_t +
+                        h * w_t * in_t +
+                        w * in_t +
+                        in;
+          } else {  // L_1230 for depthwise conv weight
+            nnapi_idx = in * h_t * w_t * out_t +
+                        h * w_t * out_t +
+                        w * out_t +
+                        out;
+          }
+
+          for (size_t i = 0; i < element_size; i++) {
+            buffer[element_size * nnapi_idx + i] = src[element_size * onnx_idx + i];
+          }
+        }
+      }
+    }
+  }
+  emscripten::val desc = emscripten::val::object();
+  desc.set("dimensions", emscripten::val::array(dest_shape));
+  emscripten::val operand = emscripten::val::object();
+
+  desc.set("type", emscripten::val("float32"));
+  emscripten::val view{emscripten::typed_memory_view(num_elements, reinterpret_cast<float*>(buffer))};
+  // view = view.call<emscripten::val>("slice",0);
+  operand = model_builder.GetBuilder().call<emscripten::val>("constant", desc, view);
+  emscripten::val Array = emscripten::val::global("Array");
+  model_builder.AddOperand(name, operand);
   return Status::OK();
 }
 
@@ -84,18 +173,29 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   const auto& input_defs = node.InputDefs();
   const auto& op_type = node.OpType();
   emscripten::val input = model_builder.GetOperand(input_defs[0]->Name());
-  emscripten::val filter = model_builder.GetOperand(input_defs[1]->Name());
   emscripten::val output = emscripten::val::object();
 
   NodeAttrHelper helper(node);
   const auto strides = helper.Get("strides", std::vector<int32_t>{1, 1});
   const auto dilations = helper.Get("dilations", std::vector<int32_t>{1, 1});
   const auto pads = helper.Get("pads", std::vector<int32_t>{0, 0, 0, 0});
+  const auto& weight = input_defs[1]->Name();
 
   if (op_type == "Conv") {
     emscripten::val options = emscripten::val::object();
     ORT_RETURN_IF_ERROR(SetConvBaseOptions(model_builder, node, options, strides, dilations, pads, logger));
-    options.set("filterLayout", emscripten::val("oihw"));
+    int groups = options["groups"].as<int>();
+    std::vector<int64_t> input_shape;
+    ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
+    bool depthwise = (groups == input_shape[3] && groups != 1);
+    ORT_RETURN_IF_ERROR(AddInitializerInNewLayout(
+        model_builder, weight, !depthwise));
+    if (!depthwise) {
+      options.set("filterLayout", emscripten::val("ohwi"));
+    } else {
+      options.set("filterLayout", emscripten::val("ihwo"));
+    }
+    emscripten::val filter = model_builder.GetOperand(input_defs[1]->Name());
     output = model_builder.GetBuilder().call<emscripten::val>("conv2d", input, filter, options);
   } else {
     emscripten::val options = emscripten::val::object();
@@ -114,6 +214,7 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
       output_padding = helper.Get("output_padding", std::vector<int32_t>{0, 0});
       options.set("outputPadding", emscripten::val::array(output_padding));
     }
+    emscripten::val filter = model_builder.GetOperand(input_defs[1]->Name());
 
     output = model_builder.GetBuilder().call<emscripten::val>("convTranspose2d", input, filter, options);
   }

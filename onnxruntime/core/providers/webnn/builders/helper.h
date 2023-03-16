@@ -5,6 +5,7 @@
 
 #include <core/common/status.h>
 #include <core/graph/basic_types.h>
+#include "core/providers/common.h"
 
 #include <emscripten.h>
 #include <emscripten/val.h>
@@ -29,6 +30,10 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
                                                       const emscripten::val& wnn_builder_,
                                                       const logging::Logger& logger);
 
+inline std::unordered_map<std::string, std::vector<std::string>> op_dependency = {
+    {"GRU", {"Split"}}
+};  // namespace webnn
+
 inline std::unordered_map<std::string, std::string> op_map = {
     {"Add", "add"},
     {"Relu", "relu"},
@@ -46,9 +51,28 @@ inline std::unordered_map<std::string, std::string> op_map = {
     {"GlobalAveragePool", "averagePool2d"},
     {"GlobalMaxPool", "maxPool2d"},
     {"AveragePool", "averagePool2d"},
+    {"MaxPool", "maxPool2d"},
     {"Reshape", "reshape"},
     {"Resize", "resample2d"},
     {"Transpose", "transpose"}};
 
-}  // namespace webnn
+inline bool CheckSingleOp(const std::string& op_type, const emscripten::val& wnn_builder_) {
+  return op_map.find(op_type) != op_map.end() && wnn_builder_[op_map[op_type]].as<bool>();
+}
+
+inline bool CheckDependency(const std::string& op_type, const emscripten::val& wnn_builder_) {
+  if (!CheckSingleOp(op_type, wnn_builder_)) {
+    return false;
+  }
+  if (Contains(op_dependency, op_type)) {
+    for (auto& op : op_dependency[op_type]) {
+      if (!CheckSingleOp(op, wnn_builder_)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+}  // namespace onnxruntime
 }  // namespace onnxruntime

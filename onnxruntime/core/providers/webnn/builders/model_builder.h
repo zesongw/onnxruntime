@@ -33,7 +33,7 @@ class ModelBuilder {
   void AddOperand(const std::string& name, const emscripten::val& operand);
 
   // Find if an output has a fuseable activation (e.g., Relu)
-  emscripten::val FindActivation(const Node& node, const NodeArg& output);
+  emscripten::val FindActivation(const Node& node, const NodeArg& output, const std::unordered_set<std::string> supported_nodes = {});
 
   const std::unordered_set<std::string>&
   GetFusedActivations() const { return fused_activations_; }
