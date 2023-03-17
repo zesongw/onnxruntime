@@ -121,8 +121,8 @@ Status AddInitializerInNewLayout(ModelBuilder& model_builder,
   SafeInt<size_t> num_elements = SafeInt<size_t>(Product(dest_shape));
 
   size_t element_size = 4;
-  uint8_t* buffer = new uint8_t[num_elements * element_size];
-
+  std::unique_ptr<uint8_t[]> buffer_holder(new uint8_t[element_size * num_elements]);
+  uint8_t* buffer = buffer_holder.get();
 
   for (uint32_t out = 0; out < out_t; out++) {
     for (uint32_t in = 0; in < in_t; in++) {
@@ -153,16 +153,7 @@ Status AddInitializerInNewLayout(ModelBuilder& model_builder,
       }
     }
   }
-  emscripten::val desc = emscripten::val::object();
-  desc.set("dimensions", emscripten::val::array(dest_shape));
-  emscripten::val operand = emscripten::val::object();
-
-  desc.set("type", emscripten::val("float32"));
-  emscripten::val view{emscripten::typed_memory_view(num_elements, reinterpret_cast<float*>(buffer))};
-  // view = view.call<emscripten::val>("slice",0);
-  operand = model_builder.GetBuilder().call<emscripten::val>("constant", desc, view);
-  emscripten::val Array = emscripten::val::global("Array");
-  model_builder.AddOperand(name, operand);
+  ORT_RETURN_IF_ERROR(model_builder.AddOperandFromPersistMemoryBuffer(name, buffer, num_elements * element_size, dest_shape, 4));
   return Status::OK();
 }
 

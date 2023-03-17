@@ -235,6 +235,21 @@ Status ModelBuilder::AddOperations() {
   return Status::OK();
 }
 
+Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
+    const std::string& name, const void* buffer, const size_t size, const std::vector<uint32_t> shape, const size_t element_size) {
+  auto persist_buffer = std::make_unique<NNMemory>(name.c_str(), size);
+  uint8_t* dest = persist_buffer->GetDataPtr();
+  memcpy(dest, buffer, size);
+  emscripten::val view{emscripten::typed_memory_view(size / element_size, reinterpret_cast<const float*>(dest))};
+  emscripten::val desc = emscripten::val::object();
+  desc.set("dimensions", emscripten::val::array(shape));
+  desc.set("type", emscripten::val("float32"));
+  emscripten::val operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
+  AddOperand(name, operand);
+  mem_persist_buffers_.push_back(std::move(persist_buffer));
+  return Status::OK();
+}
+
 Status ModelBuilder::RegisterModelOutputs() {
   for (const auto* node_arg : graph_viewer_.GetOutputs()) {
     ORT_RETURN_IF_ERROR(RegisterModelInputOutput(*node_arg, false /* is_input */));

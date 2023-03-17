@@ -31,7 +31,25 @@ class ModelBuilder {
   const emscripten::val& GetContext() const { return wnn_context_; }
   const emscripten::val& GetOperand(const std::string& name) const { return wnn_operands_.at(name); }
   void AddOperand(const std::string& name, const emscripten::val& operand);
+  // Use system memory buffer
+  class NNMemory {
+   public:
+    NNMemory(const char* name, size_t size) {
+      if (name && size > 0) {
+        data_.resize(size);
+      }
+    };
+    ~NNMemory() = default;
+    uint8_t* GetDataPtr() { return data_.data(); }
 
+   private:
+    std::vector<uint8_t> data_;
+  };
+  std::vector<std::unique_ptr<NNMemory>> mem_persist_buffers_;
+  // Add a tensor operand (and allocate persist buffer)
+  Status AddOperandFromPersistMemoryBuffer(
+      const std::string& name, const void* buffer,
+      const size_t size, const std::vector<uint32_t> shape, const size_t element_size = 4);
   // Find if an output has a fuseable activation (e.g., Relu)
   emscripten::val FindActivation(const Node& node, const NodeArg& output, const std::unordered_set<std::string> supported_nodes = {});
 
