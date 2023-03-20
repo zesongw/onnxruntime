@@ -237,8 +237,8 @@ Status ModelBuilder::AddOperations() {
 
 Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
     const std::string& name, const void* buffer, const size_t size, const std::vector<uint32_t> shape, const size_t element_size) {
-  auto persist_buffer = std::make_unique<NNMemory>(name.c_str(), size);
-  uint8_t* dest = persist_buffer->GetDataPtr();
+  auto persist_buffer = std::make_unique<uint8_t[]>(size);
+  uint8_t* dest = persist_buffer.get();
   memcpy(dest, buffer, size);
   emscripten::val view{emscripten::typed_memory_view(size / element_size, reinterpret_cast<const float*>(dest))};
   emscripten::val desc = emscripten::val::object();

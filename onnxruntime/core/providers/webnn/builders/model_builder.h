@@ -32,20 +32,7 @@ class ModelBuilder {
   const emscripten::val& GetOperand(const std::string& name) const { return wnn_operands_.at(name); }
   void AddOperand(const std::string& name, const emscripten::val& operand);
   // Use system memory buffer
-  class NNMemory {
-   public:
-    NNMemory(const char* name, size_t size) {
-      if (name && size > 0) {
-        data_.resize(size);
-      }
-    };
-    ~NNMemory() = default;
-    uint8_t* GetDataPtr() { return data_.data(); }
-
-   private:
-    std::vector<uint8_t> data_;
-  };
-  std::vector<std::unique_ptr<NNMemory>> mem_persist_buffers_;
+  std::vector<std::unique_ptr<uint8_t[]>> mem_persist_buffers_;
   // Add a tensor operand (and allocate persist buffer)
   Status AddOperandFromPersistMemoryBuffer(
       const std::string& name, const void* buffer,
