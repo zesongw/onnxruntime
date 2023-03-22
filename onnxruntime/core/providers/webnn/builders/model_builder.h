@@ -31,9 +31,9 @@ class ModelBuilder {
   const emscripten::val& GetContext() const { return wnn_context_; }
   const emscripten::val& GetOperand(const std::string& name) const { return wnn_operands_.at(name); }
   void AddOperand(const std::string& name, const emscripten::val& operand);
-  // Use system memory buffer
+  // Use the buffers to persist WebNN allocated data like transposed weight, which ensures the validity during inference session.
   std::vector<std::unique_ptr<uint8_t[]>> mem_persist_buffers_;
-  // Add a tensor operand (and allocate persist buffer)
+  // Add a operand (allocate persist buffer and move the ownership to mem_persist_buffers_)
   Status AddOperandFromPersistMemoryBuffer(
       const std::string& name, const void* buffer,
       const size_t size, const std::vector<uint32_t> shape, const size_t element_size = 4);
