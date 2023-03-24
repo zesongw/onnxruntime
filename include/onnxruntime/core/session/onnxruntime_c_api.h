@@ -3503,6 +3503,7 @@ struct OrtApi {
    *   QNN
    *   SNPE
    *   XNNPACK
+   *   WEBNN
    *
    * Note: If an execution provider has a dedicated SessionOptionsAppendExecutionProvider_<provider name> function
    *       that should be used to add it.
@@ -3529,6 +3530,9 @@ struct OrtApi {
    * XNNPACK supported keys:
    *   "intra_op_num_threads": number of thread-pool size to use for XNNPACK execution provider.
    *      default value is 0, which means to use the session thread-pool size.
+   * WEBNN supported keys:
+   *   "deviceType": webnn execute hardware, options: "auto", "cpu", "gpu".
+   *   "powerPreference": power option for webnn backend, options: "auto", "low-power", "high-performance".
    *
    * \since Version 1.12.
    */
@@ -4079,13 +4083,13 @@ struct OrtApi {
    * \param[in] info ::OrtKernelInfo instance.
    * \param[in] index The node index.
    * \param[out] is_constant Is it a constant node input or not.
-   * \param[out] out The OrtValue tensor value. 
+   * \param[out] out The OrtValue tensor value.
    *
    * \snippet{doc} snippets.dox OrtStatus Return Value
    *
    * \since Version 1.15.
    */
-  ORT_API2_STATUS(KernelInfoGetConstantInput_tensor, _In_ const OrtKernelInfo* info, size_t index, _Out_ int* is_constant, _Outptr_ const OrtValue** out); 
+  ORT_API2_STATUS(KernelInfoGetConstantInput_tensor, _In_ const OrtKernelInfo* info, size_t index, _Out_ int* is_constant, _Outptr_ const OrtValue** out);
 
 #ifdef __cplusplus
   OrtApi(const OrtApi&) = delete;  // Prevent users from accidentally copying the API structure, it should always be passed as a pointer
