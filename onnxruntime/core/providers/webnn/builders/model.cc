@@ -2,10 +2,10 @@
 // Licensed under the MIT License.
 
 #include <cstdint>
-#include <unordered_map>
 #include <vector>
 
 #include "core/common/common.h"
+#include "core/common/inlined_containers.h"
 #include "core/common/logging/logging.h"
 #include "core/common/safeint.h"
 #include "core/graph/onnx_protobuf.h"
@@ -24,8 +24,8 @@ Model::Model(const emscripten::val& context, const emscripten::val& graph, const
 
 Model::~Model() {}
 
-Status Model::Predict(const std::unordered_map<std::string, OnnxTensorData>& inputs,
-                      const std::unordered_map<std::string, OnnxTensorData>& outputs) {
+Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
+                      const InlinedHashMap<std::string, OnnxTensorData>& outputs) {
   for (const auto& input : inputs) {
     const std::string& name = input.first;
     const struct OnnxTensorData tensor = input.second;
@@ -64,11 +64,11 @@ const OnnxTensorInfo& Model::GetInputOutputInfo(const std::string& name) const {
   return input_output_info_.at(name);
 }
 
-void Model::SetInputMap(std::unordered_map<std::string, size_t>&& input_map) {
+void Model::SetInputMap(InlinedHashMap<std::string, size_t>&& input_map) {
   input_map_ = std::move(input_map);
 }
 
-void Model::SetOutputMap(std::unordered_map<std::string, size_t>&& output_map) {
+void Model::SetOutputMap(InlinedHashMap<std::string, size_t>&& output_map) {
   output_map_ = std::move(output_map);
 }
 

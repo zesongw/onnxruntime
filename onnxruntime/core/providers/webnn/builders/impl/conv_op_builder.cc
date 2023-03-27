@@ -79,7 +79,7 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
   if (input_defs.size() > 2) {
     options.set("bias", model_builder.GetOperand(input_defs[2]->Name()));
   }
-  std::unordered_set<std::string> supported_nodes{"Clip", "Relu"};
+  InlinedHashSet<std::string> supported_nodes{"Clip", "Relu"};
   emscripten::val activation = model_builder.FindActivation(node, *node.OutputDefs()[0], supported_nodes);
   if (emscripten::val::null() != activation) {
     options.set("activation", activation);
@@ -153,7 +153,8 @@ Status AddInitializerInNewLayout(ModelBuilder& model_builder,
       }
     }
   }
-  ORT_RETURN_IF_ERROR(model_builder.AddOperandFromPersistMemoryBuffer(name, buffer, num_elements * element_size, dest_shape, 4));
+  ORT_RETURN_IF_ERROR(model_builder.AddOperandFromPersistMemoryBuffer(name, buffer, num_elements * element_size,
+                                                                      dest_shape, 4));
   return Status::OK();
 }
 

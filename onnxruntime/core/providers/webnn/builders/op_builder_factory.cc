@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #include <vector>
-#include <unordered_map>
 #include <string>
 
 #include <core/graph/graph.h>
@@ -74,7 +73,7 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
   return op_registrations;
 }
 
-const std::unordered_map<std::string, const IOpBuilder*>& GetOpBuilders() {
+const InlinedHashMap<std::string, const IOpBuilder*>& GetOpBuilders() {
   static const OpBuilderRegistrations op_registrations = CreateOpBuilderRegistrations();
   return op_registrations.op_builder_map;
 }

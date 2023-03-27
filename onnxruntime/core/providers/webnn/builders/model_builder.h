@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "core/common/inlined_containers.h"
 #include <core/graph/graph_viewer.h>
 
 #include "model.h"
@@ -31,16 +32,18 @@ class ModelBuilder {
   const emscripten::val& GetContext() const { return wnn_context_; }
   const emscripten::val& GetOperand(const std::string& name) const { return wnn_operands_.at(name); }
   void AddOperand(const std::string& name, const emscripten::val& operand);
-  // Use the buffers to persist WebNN allocated data like transposed weight, which ensures the validity during inference session.
+  // Use the buffers to persist WebNN allocated data like transposed weight
+  // It ensures the validity during inference session
   std::vector<std::unique_ptr<uint8_t[]>> mem_persist_buffers_;
   // Add a constant operand (allocate persist buffer and move the ownership to mem_persist_buffers_)
   Status AddOperandFromPersistMemoryBuffer(
       const std::string& name, const void* buffer,
       const size_t size, const std::vector<uint32_t> shape, const size_t element_size = 4);
   // Find if an output has a fuseable activation (e.g., Relu)
-  emscripten::val FindActivation(const Node& node, const NodeArg& output, const std::unordered_set<std::string> supported_nodes = {});
+  emscripten::val FindActivation(const Node& node, const NodeArg& output,
+                                 const InlinedHashSet<std::string> supported_nodes = {});
 
-  const std::unordered_set<std::string>&
+  const InlinedHashSet<std::string>&
   GetFusedActivations() const { return fused_activations_; }
 
   // The initializer will be processed separately, skip it as an initializer
@@ -59,23 +62,23 @@ class ModelBuilder {
   emscripten::val wnn_context_ = emscripten::val::object();
   emscripten::val wnn_builder_ = emscripten::val::object();
   std::vector<std::vector<uint8_t>> unpacked_tensors_;
-  std::unordered_map<std::string, emscripten::val> wnn_operands_;
+  InlinedHashMap<std::string, emscripten::val> wnn_operands_;
   std::vector<std::string> input_names_;
   std::vector<std::string> output_names_;
 
-  std::unordered_set<std::string> scalar_outputs_;
-  std::unordered_map<std::string, OnnxTensorInfo> input_output_info_;
+  InlinedHashSet<std::string> scalar_outputs_;
+  InlinedHashMap<std::string, OnnxTensorInfo> input_output_info_;
 
-  std::unordered_set<std::string> skipped_initializers_;
-  std::unordered_set<std::string> skipped_inputs_;
+  InlinedHashSet<std::string> skipped_initializers_;
+  InlinedHashSet<std::string> skipped_inputs_;
 
-  std::unordered_set<std::string> fused_activations_;
+  InlinedHashSet<std::string> fused_activations_;
 
   uint32_t name_token_{0};
-  std::unordered_set<std::string> unique_names_;
+  InlinedHashSet<std::string> unique_names_;
 
   // All activation nodes (e.g., Relu) as a map <NodeIndex, FusionOperator>
-  std::unordered_map<NodeIndex, emscripten::val> activation_nodes_;
+  InlinedHashMap<NodeIndex, emscripten::val> activation_nodes_;
 
   // Convert the onnx model to WebNN operands
   Status Initialize() ORT_MUST_USE_RESULT;

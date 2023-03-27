@@ -75,11 +75,11 @@ module.exports = function (config) {
     browserNoActivityTimeout: 300000,
     browserDisconnectTolerance: 0,
     browserSocketTimeout: 60000,
-    hostname: getMachineIpAddress(),
+    hostname: 'localhost', //getMachineIpAddress(),
     customLaunchers: {
       ChromeTest: { base: 'ChromeHeadless', flags: ['--enable-features=SharedArrayBuffer'] },
       ChromePerf: { base: 'Chrome', flags: ['--window-size=1,1', '--enable-features=SharedArrayBuffer'] },
-      ChromeDebug: { debug: true, base: 'Chrome', flags: ['--remote-debugging-port=9333', '--enable-features=SharedArrayBuffer'] },
+      ChromeDebug: { debug: true, base: 'Chrome', flags: ['--remote-debugging-port=9333', '--enable-features=SharedArrayBuffer', '--enable-experimental-web-platform-features '] },
 
       //
       // ==== BrowserStack browsers ====

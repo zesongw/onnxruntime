@@ -4,6 +4,7 @@
 #pragma once
 
 #include <core/common/status.h>
+#include "core/common/inlined_containers.h"
 #include <core/graph/basic_types.h>
 #include "core/providers/common.h"
 
@@ -30,11 +31,10 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
                                                       const emscripten::val& wnn_builder_,
                                                       const logging::Logger& logger);
 
-inline std::unordered_map<std::string, std::vector<std::string>> op_dependency = {
-    {"GRU", {"Split"}}
-};  // namespace webnn
+inline InlinedHashMap<std::string, std::vector<std::string>> op_dependency = {
+    {"GRU", {"Split"}}};
 
-inline std::unordered_map<std::string, std::string> op_map = {
+inline InlinedHashMap<std::string, std::string> op_map = {
     {"Add", "add"},
     {"Relu", "relu"},
     {"LeakyRelu", "leakyRelu"},
@@ -60,6 +60,7 @@ inline bool CheckSingleOp(const std::string& op_type, const emscripten::val& wnn
   return op_map.find(op_type) != op_map.end() && wnn_builder_[op_map[op_type]].as<bool>();
 }
 
+// Check the single OP then check its dependency
 inline bool CheckDependency(const std::string& op_type, const emscripten::val& wnn_builder_) {
   if (!CheckSingleOp(op_type, wnn_builder_)) {
     return false;
@@ -74,5 +75,5 @@ inline bool CheckDependency(const std::string& op_type, const emscripten::val& w
   return true;
 }
 
-}  // namespace onnxruntime
+}  // namespace webnn
 }  // namespace onnxruntime

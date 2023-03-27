@@ -10,13 +10,13 @@ namespace webnn {
 
 struct OpBuilderRegistrations {
   std::vector<std::unique_ptr<IOpBuilder>> builders;
-  std::unordered_map<std::string, const IOpBuilder*> op_builder_map;
+  InlinedHashMap<std::string, const IOpBuilder*> op_builder_map;
 };
 
 // Get the lookup table with IOpBuilder delegates for different onnx operators
 // Note, the lookup table should have same number of entries as the result of CreateOpSupportCheckers()
 // in op_support_checker.h
-const std::unordered_map<std::string, const IOpBuilder*>& GetOpBuilders();
+const InlinedHashMap<std::string, const IOpBuilder*>& GetOpBuilders();
 
 void CreateActivationOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);
 void CreateBatchNormalizationOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);

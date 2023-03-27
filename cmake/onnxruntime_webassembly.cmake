@@ -231,7 +231,7 @@ else()
   endif()
 
   if (onnxruntime_USE_WEBNN)
-   set_property(TARGET onnxruntime_webassembly APPEND_STRING PROPERTY LINK_FLAGS " --bind --closure 0")
+   set_property(TARGET onnxruntime_webassembly APPEND_STRING PROPERTY LINK_FLAGS " --bind")
   endif()
 
   # Set link flag to enable exceptions support, this will override default disabling exception throwing behavior when disable exceptions.

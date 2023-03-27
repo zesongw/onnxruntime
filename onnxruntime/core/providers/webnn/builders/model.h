@@ -3,14 +3,12 @@
 
 #pragma once
 
+#include "core/common/inlined_containers.h"
 #include "core/common/status.h"
 #include "core/platform/ort_mutex.h"
 
-#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
-#include <emscripten/html5.h>
 #include <emscripten/val.h>
-#endif
 
 namespace onnxruntime {
 namespace webnn {
@@ -32,8 +30,8 @@ class Model {
   ~Model();
   ORT_DISALLOW_COPY_ASSIGNMENT_AND_MOVE(Model);
 
-  onnxruntime::common::Status Predict(const std::unordered_map<std::string, OnnxTensorData>& inputs,
-                                      const std::unordered_map<std::string, OnnxTensorData>& outputs);
+  onnxruntime::common::Status Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
+                                      const InlinedHashMap<std::string, OnnxTensorData>& outputs);
 
   bool IsScalarOutput(const std::string& output_name) const;
 
@@ -51,8 +49,8 @@ class Model {
 
   // Set the mapping between input/output name and ORT kernel context
   // input/output index, at execution time
-  void SetInputMap(std::unordered_map<std::string, size_t>&& input_map);
-  void SetOutputMap(std::unordered_map<std::string, size_t>&& output_map);
+  void SetInputMap(InlinedHashMap<std::string, size_t>&& input_map);
+  void SetOutputMap(InlinedHashMap<std::string, size_t>&& output_map);
 
   // Get the ORT kernel context input/output index with given name
   size_t GetMappedInputIdx(const std::string& name) const;
@@ -66,25 +64,25 @@ class Model {
   emscripten::val wnn_inputs_ = emscripten::val::object();
   emscripten::val wnn_outputs_ = emscripten::val::object();
 
-  std::unordered_set<std::string> scalar_outputs_;
+  InlinedHashSet<std::string> scalar_outputs_;
 
   std::vector<std::string> inputs_;
   std::vector<std::string> outputs_;
 
-  std::unordered_map<std::string, OnnxTensorInfo> input_output_info_;
+  InlinedHashMap<std::string, OnnxTensorInfo> input_output_info_;
 
-  std::unordered_map<std::string, size_t> input_map_;
-  std::unordered_map<std::string, size_t> output_map_;
+  InlinedHashMap<std::string, size_t> input_map_;
+  InlinedHashMap<std::string, size_t> output_map_;
 
   OrtMutex mutex_;
 
   Model(const emscripten::val& context, const emscripten::val& path, const logging::Logger& logger);
 
-  void SetInputOutputInfo(std::unordered_map<std::string, OnnxTensorInfo>&& input_output_info) {
+  void SetInputOutputInfo(InlinedHashMap<std::string, OnnxTensorInfo>&& input_output_info) {
     input_output_info_ = std::move(input_output_info);
   }
 
-  void SetScalarOutputs(std::unordered_set<std::string>&& scalar_outputs) {
+  void SetScalarOutputs(InlinedHashSet<std::string>&& scalar_outputs) {
     scalar_outputs_ = std::move(scalar_outputs);
   }
 };

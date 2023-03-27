@@ -115,7 +115,8 @@ Status ModelBuilder::RegisterInitializers() {
       ORT_RETURN_IF_ERROR(onnxruntime::utils::UnpackInitializerData(tensor, unpacked_tensor));
       auto num_elements = SafeInt<size_t>(Product(tensor.dims()));
       desc.set("type", emscripten::val("float32"));
-      emscripten::val view{emscripten::typed_memory_view(num_elements, reinterpret_cast<float*>(unpacked_tensor.data()))};
+      emscripten::val view{emscripten::typed_memory_view(num_elements,
+                                                         reinterpret_cast<float*>(unpacked_tensor.data()))};
       operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
     } else {
       // TODO: support other type
@@ -236,7 +237,8 @@ Status ModelBuilder::AddOperations() {
 }
 
 Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
-    const std::string& name, const void* buffer, const size_t size, const std::vector<uint32_t> shape, const size_t element_size) {
+    const std::string& name, const void* buffer, const size_t size,
+    const std::vector<uint32_t> shape, const size_t element_size) {
   auto persist_buffer = std::make_unique<uint8_t[]>(size);
   uint8_t* dest = persist_buffer.get();
   memcpy(dest, buffer, size);
@@ -276,7 +278,9 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   return Status::OK();
 }
 
-emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& output, const std::unordered_set<std::string> supported_nodes) {
+// supported_nodes is provided by the op to indicate whether it can be fused with the activation node
+emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& output,
+                                             const InlinedHashSet<std::string> supported_nodes) {
   emscripten::val fused_op = emscripten::val::null();
   for (auto it = node.OutputEdgesBegin(), end = node.OutputEdgesEnd(); it != end; ++it) {
     const auto& dst_node = it->GetNode();

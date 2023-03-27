@@ -184,7 +184,7 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
     //   }
     // } else {
     //   // nearest neighbor resizing
-    //   // For resize using nearest neighbor, we only support coord_trans_mode == "asymmetric" && nearest_mode == "floor"
+    //   // For nearest neighbor, we only support coord_trans_mode == "asymmetric" && nearest_mode == "floor"
     //   if (!using_asymmetric) {
     //     LOGS(logger, VERBOSE) << "Resize nearest neighbor, unsupported coord_trans_mode, " << coord_trans_mode;
     //     return false;

@@ -36,13 +36,13 @@ WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_device_flags, uint
   InsertAllocator(CreateAllocator(cpu_memory_info));
 
   // Create WebNN context and graph builder
-  std::unordered_map<uint32_t, std::string> device_type_name_s = {
+  InlinedHashMap<uint32_t, std::string> device_type_name_s = {
       {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
-  std::unordered_map<uint32_t, std::string> power_preference_name_s = {
+  InlinedHashMap<uint32_t, std::string> power_preference_name_s = {
       {0, "auto"}, {1, "high-performance"}, {2, "low-power"}};
   std::string device_type_name_ = device_type_name_s[webnn_device_flags];
   std::string power_preference_name_ = power_preference_name_s[webnn_power_flags];
-  thread_local const emscripten::val ml = emscripten::val::global("navigator")["ml"];
+  const emscripten::val ml = emscripten::val::global("navigator")["ml"];
   if (!ml.as<bool>()) {
     ORT_THROW("Failed to get ml from navigator.");
   }
@@ -98,7 +98,7 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
   }
 
   const auto& graph_output_list = graph_viewer.GetOutputs();
-  std::unordered_set<const NodeArg*> graph_outputs(graph_output_list.cbegin(), graph_output_list.cend());
+  InlinedHashSet<const NodeArg*> graph_outputs(graph_output_list.cbegin(), graph_output_list.cend());
 
   size_t num_of_supported_nodes = 0;
   for (const auto& group : node_groups) {
@@ -109,7 +109,7 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
     LOGS(logger, VERBOSE) << "WebNNExecutionProvider::GetCapability, current supported node group size: "
                           << group.size();
 
-    std::unordered_set<NodeIndex> node_set;
+    InlinedHashSet<NodeIndex> node_set;
     node_set.reserve(group.size());
     for (const auto& index : group) {
       node_set.insert(index);
@@ -117,9 +117,9 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
 
     std::unique_ptr<IndexedSubGraph> sub_graph = std::make_unique<IndexedSubGraph>();
 
-    std::unordered_set<const NodeArg*> node_outputs;
-    std::unordered_set<const NodeArg*> subgraph_inputs;
-    std::unordered_set<const NodeArg*> subgraph_outputs;
+    InlinedHashSet<const NodeArg*> node_outputs;
+    InlinedHashSet<const NodeArg*> subgraph_inputs;
+    InlinedHashSet<const NodeArg*> subgraph_outputs;
     std::vector<const NodeArg*> ordered_subgraph_inputs;
     std::vector<const NodeArg*> ordered_subgraph_outputs;
 
@@ -209,7 +209,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
     ORT_RETURN_IF_ERROR(builder.Compile(model));
     // Build map from input name to its index in input definitions
     {
-      std::unordered_map<std::string, size_t> input_map;
+      InlinedHashMap<std::string, size_t> input_map;
       const auto& input_defs = fused_node.InputDefs();
       input_map.reserve(input_defs.size());
       for (size_t i = 0, end = input_defs.size(); i < end; ++i) {
@@ -219,7 +219,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
     }
     // Build map from output name to its index in output definitions
     {
-      std::unordered_map<std::string, size_t> output_map;
+      InlinedHashMap<std::string, size_t> output_map;
       const auto& output_defs = fused_node.OutputDefs();
       output_map.reserve(output_defs.size());
       for (size_t i = 0, end = output_defs.size(); i < end; ++i) {
@@ -255,7 +255,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
       ORT_RETURN_IF_NOT(model_inputs.size() <= num_inputs, "Inconsistent input sizes");
       ORT_RETURN_IF_NOT(model_outputs.size() == num_outputs, "Inconsistent output sizes");
 
-      std::unordered_map<std::string, webnn::OnnxTensorData> inputs;
+      InlinedHashMap<std::string, webnn::OnnxTensorData> inputs;
       inputs.reserve(model_inputs.size());
       for (size_t i = 0; i < model_inputs.size(); i++) {
         const auto& input_name = model_inputs[i];
@@ -283,7 +283,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
       // TODO, investigate concurrent runs for different executions from the same model
       {
         std::unique_lock<OrtMutex> lock(model->GetMutex());
-        std::unordered_map<std::string, webnn::OnnxTensorData> outputs;
+        InlinedHashMap<std::string, webnn::OnnxTensorData> outputs;
         outputs.reserve(model_outputs.size());
         for (size_t i = 0; i < model_outputs.size(); i++) {
           const auto& output_name = model_outputs[i];

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "core/common/inlined_containers.h"
 #include "core/framework/execution_provider.h"
 #include "core/providers/webnn/webnn_provider_factory.h"
 
@@ -42,6 +43,6 @@ class WebNNExecutionProvider : public IExecutionProvider {
   emscripten::val wnn_context_ = emscripten::val::object();
   emscripten::val wnn_builder_ = emscripten::val::object();
 
-  std::unordered_map<std::string, std::unique_ptr<onnxruntime::webnn::Model>> models_;
+  InlinedHashMap<std::string, std::unique_ptr<onnxruntime::webnn::Model>> models_;
 };
 }  // namespace onnxruntime
