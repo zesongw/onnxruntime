@@ -2,6 +2,12 @@
 // Licensed under the MIT License.
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include "core/framework/tensor_shape.h"
+#include "core/session/onnxruntime_c_api.h"
+
 struct OrtTensorTypeAndShapeInfo {
  public:
   ONNXTensorElementDataType type = ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT;
@@ -13,4 +19,8 @@ struct OrtTensorTypeAndShapeInfo {
   OrtTensorTypeAndShapeInfo() = default;
   OrtTensorTypeAndShapeInfo(const OrtTensorTypeAndShapeInfo& other) = delete;
   OrtTensorTypeAndShapeInfo& operator=(const OrtTensorTypeAndShapeInfo& other) = delete;
+
+  OrtStatus* Clone(OrtTensorTypeAndShapeInfo** out);
 };
+
+constexpr ONNXTensorElementDataType TensorDataTypeToOnnxRuntimeTensorElementDataType(int32_t dtype);

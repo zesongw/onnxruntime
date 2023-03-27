@@ -1,40 +1,40 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "binary_elementwise_ops.h"
-#include "binary_elementwise_ops_impl.h"
+#include "contrib_ops/cuda/math/binary_elementwise_ops.h"
+#include "contrib_ops/cuda/math/binary_elementwise_ops_impl.h"
 
 using namespace onnxruntime::common;
 namespace onnxruntime {
 namespace contrib {
 namespace cuda {
 
-#define CONTRIB_BINARY_ELEMENTWISE_REGISTER_KERNEL_TYPED(x, ver, T)             \
-  ONNX_OPERATOR_TYPED_KERNEL_EX(                                                \
-      x,                                                                        \
-      kMSDomain,                                                                \
-      ver,                                                                      \
-      T,                                                                        \
-      kCudaExecutionProvider,                                                   \
-      KernelDefBuilder().TypeConstraint("T", DataTypeImpl::GetTensorType<T>()), \
+#define CONTRIB_BINARY_ELEMENTWISE_REGISTER_KERNEL_TYPED(x, ver, T)                        \
+  ONNX_OPERATOR_TYPED_KERNEL_EX(                                                           \
+      x,                                                                                   \
+      kMSDomain,                                                                           \
+      ver,                                                                                 \
+      T,                                                                                   \
+      kCudaExecutionProvider,                                                              \
+      (*KernelDefBuilder::Create()).TypeConstraint("T", DataTypeImpl::GetTensorType<T>()), \
       x<T>);
 
 #define CONTRIB_BINARY_ELEMENTWISE_COMPUTE(x, T)                                                                 \
   template <>                                                                                                    \
   Status x<T>::ComputeInternal(OpKernelContext* context) const {                                                 \
-    BinaryElementwisePreparation prepare(this);                                                                  \
+    BinaryElementwisePreparation prepare;                                                                        \
     ORT_RETURN_IF_ERROR(Prepare(context, &prepare));                                                             \
-    ORT_RETURN_IF_ERROR(prepare.CopyToGpu());                                                                    \
     Impl_##x<typename ToCudaType<T>::MappedType>(                                                                \
+        Stream(context),                                                                                         \
         prepare.output_rank_or_simple_broadcast,                                                                 \
-        prepare.lhs_padded_strides.GpuPtr(),                                                                     \
-        reinterpret_cast<const typename ToCudaType<T>::MappedType*>(prepare.lhs_tensor->template Data<T>()),     \
-        prepare.rhs_padded_strides.GpuPtr(),                                                                     \
-        reinterpret_cast<const typename ToCudaType<T>::MappedType*>(prepare.rhs_tensor->template Data<T>()),     \
-        prepare.fdm_output_strides.GpuPtr(),                                                                     \
+        &prepare.lhs_padded_strides,                                                                             \
+        reinterpret_cast<const typename ToCudaType<T>::MappedType*>(prepare.lhs_tensor->Data<T>()),     \
+        &prepare.rhs_padded_strides,                                                                             \
+        reinterpret_cast<const typename ToCudaType<T>::MappedType*>(prepare.rhs_tensor->Data<T>()),     \
+        &prepare.fdm_output_strides,                                                                             \
         prepare.fdm_H,                                                                                           \
         prepare.fdm_C,                                                                                           \
-        reinterpret_cast<typename ToCudaType<T>::MappedType*>(prepare.output_tensor->template MutableData<T>()), \
+        reinterpret_cast<typename ToCudaType<T>::MappedType*>(prepare.output_tensor->MutableData<T>()), \
         prepare.output_tensor->Shape().Size());                                                                  \
     return Status::OK();                                                                                         \
   }
@@ -61,7 +61,8 @@ namespace cuda {
 #define CONTRIB_BINARY_OP_HFD(name, ver)        \
   CONTRIB_BINARY_OP_TYPED(name, ver, MLFloat16) \
   CONTRIB_BINARY_OP_TYPED(name, ver, float)     \
-  CONTRIB_BINARY_OP_TYPED(name, ver, double)
+  CONTRIB_BINARY_OP_TYPED(name, ver, double)    \
+  CONTRIB_BINARY_OP_TYPED(name, ver, BFloat16)
 
 CONTRIB_BINARY_OP_HFD(BiasGelu, 1)
 

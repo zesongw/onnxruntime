@@ -19,6 +19,8 @@
 #include <gtest/gtest.h>
 #include "core/platform/threadpool.h"
 #include "core/util/math_cpuonly.h"
+#include "core/util/thread_utils.h"
+
 namespace onnxruntime {
 
 #define VECTOR_HEAD(x) x.size() > 0 ? &x[0] : NULL
@@ -26,12 +28,12 @@ namespace onnxruntime {
 //parameter is thread pool size
 class MathGemmTest : public testing::TestWithParam<int> {
  protected:
-  static concurrency::ThreadPool* CreateThreadPool(int size) {
-    if (size == 1)
-      return nullptr;
-    return new concurrency::ThreadPool("test", size);
+  static OrtThreadPoolParams CreateThreadPoolOptions(int size) {
+    OrtThreadPoolParams option;
+    option.thread_pool_size = size;
+    return option;
   }
-  std::unique_ptr<concurrency::ThreadPool> tp{CreateThreadPool(GetParam())};
+  std::unique_ptr<concurrency::ThreadPool> tp{concurrency::CreateThreadPool(&Env::Default(), CreateThreadPoolOptions(GetParam()), concurrency::ThreadPoolType::INTRA_OP)};
 };
 
 TEST_P(MathGemmTest, GemmNoTransNoTrans) {
@@ -49,9 +51,9 @@ TEST_P(MathGemmTest, GemmNoTransNoTrans) {
     EXPECT_EQ(W[i], 1);
   }
 
-  const float kOne = 1.0;
-  const float kPointFive = 0.5;
-  const float kZero = 0.0;
+  constexpr float kOne = 1.0;
+  constexpr float kPointFive = 0.5;
+  constexpr float kZero = 0.0;
   math::Gemm<float>(CblasNoTrans, CblasNoTrans, 5, 6, 10, kOne,
                     VECTOR_HEAD(X), VECTOR_HEAD(W), kZero, VECTOR_HEAD(Y),
                     tp.get());
@@ -94,9 +96,9 @@ TEST_P(MathGemmTest, GemmNoTransTrans) {
     EXPECT_EQ(W[i], 1);
   }
 
-  const float kOne = 1.0;
-  const float kPointFive = 0.5;
-  const float kZero = 0.0;
+  constexpr float kOne = 1.0;
+  constexpr float kPointFive = 0.5;
+  constexpr float kZero = 0.0;
   math::Gemm<float>(CblasNoTrans, CblasTrans, 5, 6, 10, kOne,
                     VECTOR_HEAD(X), VECTOR_HEAD(W), kZero, VECTOR_HEAD(Y),
                     tp.get());
@@ -121,8 +123,8 @@ TEST_P(MathGemmTest, GemmNoTransTrans) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(MathGemmTests, MathGemmTest,
-                        testing::Values(1, 4));
+INSTANTIATE_TEST_SUITE_P(MathGemmTests, MathGemmTest,
+                         testing::Values(1, 0));
 
 TEST(MathTest, GemvNoTrans) {
   auto& provider = CPUMathUtil::Instance();
@@ -139,9 +141,9 @@ TEST(MathTest, GemvNoTrans) {
     EXPECT_EQ(X[i], 1);
   }
 
-  const float kOne = 1.0;
-  const float kPointFive = 0.5;
-  const float kZero = 0.0;
+  constexpr float kOne = 1.0;
+  constexpr float kPointFive = 0.5;
+  constexpr float kZero = 0.0;
   math::Gemv<float, CPUMathUtil>(CblasNoTrans, 5, 10, kOne, VECTOR_HEAD(A), VECTOR_HEAD(X),
                                  kZero, VECTOR_HEAD(Y), &provider);
   for (size_t i = 0; i < Y.size(); ++i) {
@@ -177,9 +179,9 @@ TEST(MathTest, GemvTrans) {
     EXPECT_EQ(X[i], 1);
   }
 
-  const float kOne = 1.0;
-  const float kPointFive = 0.5;
-  const float kZero = 0.0;
+  constexpr float kOne = 1.0;
+  constexpr float kPointFive = 0.5;
+  constexpr float kZero = 0.0;
   math::Gemv<float, CPUMathUtil>(CblasTrans, 6, 10, kOne, VECTOR_HEAD(A), VECTOR_HEAD(X),
                                  kZero, VECTOR_HEAD(Y), &provider);
   for (size_t i = 0; i < Y.size(); ++i) {

@@ -9,19 +9,26 @@ using namespace onnxruntime::common;
 namespace onnxruntime {
 namespace cuda {
 
-const std::vector<MLDataType> castOpTypeConstraints{
-    DataTypeImpl::GetTensorType<MLFloat16>(),
-    DataTypeImpl::GetTensorType<float>(),
-    DataTypeImpl::GetTensorType<double>(),
-    DataTypeImpl::GetTensorType<int8_t>(),
-    DataTypeImpl::GetTensorType<int16_t>(),
-    DataTypeImpl::GetTensorType<int32_t>(),
-    DataTypeImpl::GetTensorType<int64_t>(),
-    DataTypeImpl::GetTensorType<uint8_t>(),
-    DataTypeImpl::GetTensorType<uint16_t>(),
-    DataTypeImpl::GetTensorType<uint32_t>(),
-    DataTypeImpl::GetTensorType<uint64_t>(),
-    DataTypeImpl::GetTensorType<bool>()};
+const std::vector<MLDataType>& CastOpTypeConstraints() {
+  // Must be done as a local static for a shared provider, to avoid the prefast warning:
+  // Global initializer calls a non-constexpr function 'onnxruntime::DataTypeImpl::GetTensorType<onnxruntime::MLFloat16>'
+  // In a shared provider, GetTensorType is a function call into Onnxruntime and isn't constexpr
+  static std::vector<MLDataType> types{
+      DataTypeImpl::GetTensorType<MLFloat16>(),
+      DataTypeImpl::GetTensorType<BFloat16>(),
+      DataTypeImpl::GetTensorType<float>(),
+      DataTypeImpl::GetTensorType<double>(),
+      DataTypeImpl::GetTensorType<int8_t>(),
+      DataTypeImpl::GetTensorType<int16_t>(),
+      DataTypeImpl::GetTensorType<int32_t>(),
+      DataTypeImpl::GetTensorType<int64_t>(),
+      DataTypeImpl::GetTensorType<uint8_t>(),
+      DataTypeImpl::GetTensorType<uint16_t>(),
+      DataTypeImpl::GetTensorType<uint32_t>(),
+      DataTypeImpl::GetTensorType<uint64_t>(),
+      DataTypeImpl::GetTensorType<bool>()};
+  return types;
+}
 
 #define REGISTER_KERNEL_TYPED(T)                                  \
   ONNX_OPERATOR_VERSIONED_TYPED_KERNEL_EX(                        \
@@ -30,19 +37,29 @@ const std::vector<MLDataType> castOpTypeConstraints{
       6, 8,                                                       \
       T,                                                          \
       kCudaExecutionProvider,                                     \
-      KernelDefBuilder()                                          \
+      (*KernelDefBuilder::Create())                               \
           .TypeConstraint("T1", DataTypeImpl::GetTensorType<T>()) \
-          .TypeConstraint("T2", castOpTypeConstraints),           \
+          .TypeConstraint("T2", CastOpTypeConstraints()),         \
+      Cast<T>);                                                   \
+  ONNX_OPERATOR_VERSIONED_TYPED_KERNEL_EX(                        \
+      Cast,                                                       \
+      kOnnxDomain,                                                \
+      9, 12,                                                      \
+      T,                                                          \
+      kCudaExecutionProvider,                                     \
+      (*KernelDefBuilder::Create())                               \
+          .TypeConstraint("T1", DataTypeImpl::GetTensorType<T>()) \
+          .TypeConstraint("T2", CastOpTypeConstraints()),         \
       Cast<T>);                                                   \
   ONNX_OPERATOR_TYPED_KERNEL_EX(                                  \
       Cast,                                                       \
       kOnnxDomain,                                                \
-      9,                                                          \
+      13,                                                         \
       T,                                                          \
       kCudaExecutionProvider,                                     \
-      KernelDefBuilder()                                          \
+      (*KernelDefBuilder::Create())                               \
           .TypeConstraint("T1", DataTypeImpl::GetTensorType<T>()) \
-          .TypeConstraint("T2", castOpTypeConstraints),           \
+          .TypeConstraint("T2", CastOpTypeConstraints()),         \
       Cast<T>);
 
 template <typename SrcT>
@@ -50,22 +67,24 @@ Status Cast<SrcT>::ComputeInternal(OpKernelContext* context) const {
   typedef typename ToCudaType<SrcT>::MappedType CudaSrcT;
   const Tensor* X = context->Input<Tensor>(0);
   const TensorShape& shape = X->Shape();
-  Tensor* Y = context->Output(0, TensorShape(shape));
-  const auto* x_data = reinterpret_cast<const CudaSrcT*>(X->template Data<SrcT>());
+  Tensor* Y = context->Output(0, shape);
+  const auto* x_data = reinterpret_cast<const CudaSrcT*>(X->Data<SrcT>());
   size_t count = shape.Size();
 
 #define CASE(TP_TYPE, DstT)                                                                          \
   case TP_TYPE:                                                                                      \
     if (count > 0) {                                                                                 \
       Impl_Cast<CudaSrcT, typename ToCudaType<DstT>::MappedType>(                                    \
+          Stream(context),                                                                           \
           x_data,                                                                                    \
-          reinterpret_cast<typename ToCudaType<DstT>::MappedType*>(Y->template MutableData<DstT>()), \
+          reinterpret_cast<typename ToCudaType<DstT>::MappedType*>(Y->MutableData<DstT>()), \
           count);                                                                                    \
     }                                                                                                \
     break;
 
   switch (to_) {
     CASE(TensorProto_DataType_FLOAT16, MLFloat16)
+    CASE(TensorProto_DataType_BFLOAT16, BFloat16)
     CASE(TensorProto_DataType_FLOAT, float)
     CASE(TensorProto_DataType_DOUBLE, double)
     CASE(TensorProto_DataType_INT8, int8_t)
@@ -103,6 +122,7 @@ SPECIALIZE_IMPL(uint16_t)
 SPECIALIZE_IMPL(uint32_t)
 SPECIALIZE_IMPL(uint64_t)
 SPECIALIZE_IMPL(bool)
+SPECIALIZE_IMPL(BFloat16)
 
 }  // namespace cuda
 }  // namespace onnxruntime

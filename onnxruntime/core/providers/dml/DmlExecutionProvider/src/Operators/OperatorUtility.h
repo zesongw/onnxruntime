@@ -47,6 +47,13 @@ namespace Dml
         // produce the attribute for Activation in a fused Conv+Activation kernel.
         std::string GetFusedAttributeName(std::string_view name);
 
+#if _DEBUG
+        void AssertFusableOperatorSupportsVersionIfExists(
+            std::string_view type,
+            std::string_view domain,
+            int sinceVersion);
+#endif
+
     } // namespace FusionHelpers
 
     // Given an axis in ONNX axis numbering, return the axis adjusted for DML based on how the sizes have been coerced.
@@ -55,6 +62,26 @@ namespace Dml
 
     uint32_t GetDmlAdjustedAxis(int32_t onnxAxis, uint32_t onnxDimCount, uint32_t dmlDimCount);
 
+    void GetDmlAdjustedAxes(/*inout*/ gsl::span<const int32_t> axes, uint32_t onnxDimCount, uint32_t dmlDimCount, std::vector<uint32_t>& dmlAxes);
+
+    struct NameAndIndex
+    {
+        const char* name; // Null terminated.
+        uint32_t index;
+    };
+
+    std::optional<uint32_t> TryMapStringToIndex(std::string_view mode, gsl::span<const NameAndIndex> nameAndIndexList);
+
+    template<typename T>
+    std::optional<T> TryMapStringToIndex(std::string_view mode, gsl::span<const NameAndIndex> nameAndIndexList)
+    {
+        static_assert(sizeof(T) == sizeof(uint32_t));
+        auto result = TryMapStringToIndex(mode, nameAndIndexList);
+        return *reinterpret_cast<std::optional<T>*>(std::addressof(result));
+    }
+
     DML_INTERPOLATION_MODE MapStringToInteropolationMode(std::string_view mode);
+
+    DML_DEPTH_SPACE_ORDER MapStringToDepthSpaceMode(std::string_view mode);
 
 } // namespace Dml

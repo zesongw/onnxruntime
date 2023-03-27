@@ -3,7 +3,9 @@
 
 #include "gtest/gtest.h"
 #include "test/providers/provider_test_utils.h"
+#include "test/common/dnnl_op_test_utils.h"
 #include "core/util/math.h"
+#include "default_providers.h"
 
 namespace onnxruntime {
 namespace test {
@@ -51,9 +53,9 @@ GenerateSequence(OutputIter out) {
 
 template <class T>
 struct ToTestableType {
- static T to_type(T v) {
-  return v;
- }
+  static T to_type(T v) {
+    return v;
+  }
 };
 
 template <>
@@ -65,7 +67,7 @@ struct ToTestableType<MLFloat16> {
 
 template <>
 struct ToTestableType<BFloat16> {
-  inline float to_type(BFloat16 v) {
+  static float to_type(BFloat16 v) {
     return v.ToFloat();
   }
 };
@@ -120,7 +122,7 @@ TEST(MathOpTest, Sign_uint64) {
   test.AddOutput<uint64_t>("output", input_dims, output);
   test.Run(OpTester::ExpectResult::kExpectSuccess);
 }
-
+//we disable this test for openvino as openvino ep supports only FP32 Precision
 TEST(MathOpTest, Sign_int64) {
   using namespace test_sign_internal;
   OpTester test("Sign", 9);
@@ -134,7 +136,7 @@ TEST(MathOpTest, Sign_int64) {
   std::vector<int64_t> output;
   TestImpl<int64_t>(input.cbegin(), input.cend(), std::back_inserter(output));
   test.AddOutput<int64_t>("output", input_dims, output);
-  test.Run(OpTester::ExpectResult::kExpectSuccess);
+  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kOpenVINOExecutionProvider});
 }
 
 TEST(MathOpTest, Sign_float) {
@@ -183,6 +185,34 @@ TEST(MathOpTest, Sign_MLFloat16) {
   test.AddOutput<MLFloat16>("output", input_dims, output);
   test.Run(OpTester::ExpectResult::kExpectSuccess);
 }
+
+#if defined(USE_DNNL)
+TEST(MathOpTest, Sign_bfloat16) {
+#ifdef USE_DNNL
+   if (!DnnlHasBF16Support()) {
+    LOGS_DEFAULT(WARNING) << "Hardware does NOT support BF16";
+    return;
+  }
+#endif
+  using namespace test_sign_internal;
+  OpTester test("Sign", 13);
+
+  std::vector<int64_t> input_dims{7};
+  std::vector<BFloat16> input;
+  GenerateSequence<BFloat16>(std::back_inserter(input));
+  ASSERT_EQ(input.size(), 7U);
+  test.AddInput<BFloat16>("input", input_dims, input);
+
+  std::vector<BFloat16> output;
+  TestImpl<BFloat16>(input.cbegin(), input.cend(), std::back_inserter(output));
+  test.AddOutput<BFloat16>("output", input_dims, output);
+  std::vector<std::unique_ptr<IExecutionProvider>> execution_providers;
+  #if defined(USE_DNNL)
+  execution_providers.push_back(DefaultDnnlExecutionProvider());
+  #endif  //  USE_DNNL
+  test.Run(OpTester::ExpectResult::kExpectSuccess, "", {}, nullptr, &execution_providers);
+}
+#endif
 
 }  // namespace test
 }  // namespace onnxruntime

@@ -17,7 +17,7 @@ namespace cuda {
       ver,                                                       \
       T,                                                         \
       kCudaExecutionProvider,                                    \
-      KernelDefBuilder()                                         \
+      (*KernelDefBuilder::Create())                              \
           .TypeConstraint("T", DataTypeImpl::GetTensorType<T>()) \
           .MayInplace(0, 0),                                     \
       x<T>);
@@ -26,13 +26,13 @@ namespace cuda {
   template <>                                                                                              \
   Status x<T>::ComputeInternal(OpKernelContext* context) const {                                           \
     UnaryElementwisePreparation p;                                                                         \
-    UnaryElementwise::Prepare(context, &p);                                                                \
-    CudaAsyncBuffer<Ctx##x> func_ctx(this, MakeFuncCtx(), 1);                                              \
-    if (!std::is_same<CtxNull, Ctx##x>::value) ORT_RETURN_IF_ERROR(func_ctx.CopyToGpu());                  \
+    ORT_RETURN_IF_ERROR(UnaryElementwise::Prepare(context, &p));                                           \
+    Ctx##x func_ctx = MakeFuncCtx();                                                                       \
     Impl_##x<typename ToCudaType<T>::MappedType>(                                                          \
-        reinterpret_cast<const typename ToCudaType<T>::MappedType*>(p.input_tensor->template Data<T>()),   \
-        reinterpret_cast<typename ToCudaType<T>::MappedType*>(p.output_tensor->template MutableData<T>()), \
-        func_ctx.GpuPtr(), p.output_tensor->Shape().Size());                                               \
+        Stream(context),                                                                                          \
+        reinterpret_cast<const typename ToCudaType<T>::MappedType*>(p.input_tensor->Data<T>()),   \
+        reinterpret_cast<typename ToCudaType<T>::MappedType*>(p.output_tensor->MutableData<T>()), \
+        &func_ctx, p.output_tensor->Shape().Size());                                                       \
                                                                                                            \
     return Status::OK();                                                                                   \
   }
@@ -50,6 +50,7 @@ UNARY_ACTIVATION_OP_HFD(Affine, 1, kOnnxDomain);
 UNARY_ACTIVATION_OP_HFD(ParametricSoftplus, 1, kOnnxDomain);
 UNARY_ACTIVATION_OP_HFD(ScaledTanh, 1, kOnnxDomain);
 UNARY_ACTIVATION_OP_HFD(Gelu, 1, kMSDomain);
+UNARY_ACTIVATION_OP_HFD(QuickGelu, 1, kMSDomain);
 
 REGISTER_ACTIVATION_KERNEL(ThresholdedRelu, 1, kOnnxDomain, MLFloat16)
 REGISTER_ACTIVATION_KERNEL(ThresholdedRelu, 1, kOnnxDomain, float)

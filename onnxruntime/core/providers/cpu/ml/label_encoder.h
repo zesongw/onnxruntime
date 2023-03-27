@@ -73,17 +73,17 @@ class LabelEncoder_2 final : public OpKernel {
     if (tensor_pointer == nullptr) return Status(common::ONNXRUNTIME, common::FAIL, "input count mismatch");
     const Tensor& X = *tensor_pointer;
     const TensorShape& shape = X.Shape();
-    Tensor& Y = *context->Output(0, TensorShape(shape));
+    Tensor& Y = *context->Output(0, shape);
 
     auto input = X.template DataAsSpan<TKey>();
     auto output = Y.template MutableDataAsSpan<TValue>();
 
     for (int64_t i = 0; i < shape.Size(); ++i) {
-      const auto found = _map.find(input[i]);
+      const auto found = _map.find(input[onnxruntime::narrow<size_t>(i)]);
       if (found == _map.end())
-        output[i] = _default_value;
+        output[onnxruntime::narrow<size_t>(i)] = _default_value;
       else
-        output[i] = found->second;
+        output[onnxruntime::narrow<size_t>(i)] = found->second;
     }
 
     return Status::OK();
