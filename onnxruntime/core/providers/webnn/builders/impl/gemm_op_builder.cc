@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/common/safeint.h"
@@ -15,18 +16,18 @@ namespace onnxruntime {
 namespace webnn {
 
 class GemmOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& /* initializers */, const Node& /* node */,
                          const logging::Logger& /* logger */) const override;
 };
 
-// Add operator related
+// Add operator related.
 Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                             const logging::Logger& /* logger */) const {
   const auto& op_type = node.OpType();
@@ -50,7 +51,7 @@ Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
     options.set("alpha", alpha);
     options.set("beta", beta);
 
-    // Add bias if present
+    // Add bias if present.
     if (input_defs.size() > 2) {
       options.set("c", model_builder.GetOperand(node.InputDefs()[c_idx]->Name()));
     }
@@ -62,7 +63,7 @@ Status GemmOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool GemmOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                                       const logging::Logger& logger) const {
@@ -104,7 +105,7 @@ bool GemmOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, 
       }
     }
 
-    // C of Gemm
+    // C of Gemm.
     if (input_defs.size() == 3) {
       std::vector<int64_t> c_shape;
       if (!GetShape(*input_defs[c_idx], c_shape, logger))
@@ -113,8 +114,8 @@ bool GemmOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, 
       size_t c_dim = c_shape.size();
 
       if (c_dim > 1) {
-        // TODO: Supports other shape of C
-        // Currently WebNN implementation in Chromium only supports 1-D C
+        // TODO: Supports other shape of C.
+        // Currently WebNN implementation in Chromium only supports 1-D C.
         return false;
       }
       if (c_dim == 0) {

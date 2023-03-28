@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "webnn_execution_provider.h"
@@ -35,7 +36,7 @@ WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_device_flags, uint
 
   InsertAllocator(CreateAllocator(cpu_memory_info));
 
-  // Create WebNN context and graph builder
+  // Create WebNN context and graph builder.
   InlinedHashMap<uint32_t, std::string> device_type_name_s = {
       {0, "auto"}, {1, "gpu"}, {2, "cpu"}};
   InlinedHashMap<uint32_t, std::string> power_preference_name_s = {
@@ -66,8 +67,8 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
                                       const IKernelLookup& /*kernel_registries*/) const {
   std::vector<std::unique_ptr<ComputeCapability>> result;
 
-  // We do not run WebNN EP on subgraph, instead we cover this in the control flow nodes
-  // TODO investigate whether we want to support subgraph using WebNN EP
+  // We do not run WebNN EP on subgraph, instead we cover this in the control flow nodes.
+  // TODO investigate whether we want to support subgraph using WebNN EP.
   if (graph_viewer.IsSubgraph()) {
     return result;
   }
@@ -146,7 +147,7 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
         }
       }
 
-      // if output connects to a node not in this subgraph we need to produce it
+      // if output connects to a node not in this subgraph we need to produce it.
       for (auto it = node->OutputEdgesBegin(), end = node->OutputEdgesEnd(); it != end; ++it) {
         if (node_set.count(it->GetNode().Index()) == 0) {
           const auto* output_def = output_defs[it->GetSrcArgIndex()];
@@ -158,7 +159,7 @@ WebNNExecutionProvider::GetCapability(const onnxruntime::GraphViewer& graph_view
       }
     }
 
-    // Assign inputs and outputs to subgraph's meta_def
+    // Assign inputs and outputs to subgraph's meta_def.
     uint64_t model_hash;
     int metadef_id = GenerateMetaDefId(graph_viewer, model_hash);
     auto meta_def = std::make_unique<::onnxruntime::IndexedSubGraph::MetaDef>();
@@ -207,7 +208,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
     webnn::ModelBuilder builder(graph_viewer, *GetLogger(), wnn_context_, wnn_builder_);
     std::unique_ptr<webnn::Model> model;
     ORT_RETURN_IF_ERROR(builder.Compile(model));
-    // Build map from input name to its index in input definitions
+    // Build map from input name to its index in input definitions.
     {
       InlinedHashMap<std::string, size_t> input_map;
       const auto& input_defs = fused_node.InputDefs();
@@ -217,7 +218,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
       }
       model->SetInputMap(std::move(input_map));
     }
-    // Build map from output name to its index in output definitions
+    // Build map from output name to its index in output definitions.
     {
       InlinedHashMap<std::string, size_t> output_map;
       const auto& output_defs = fused_node.OutputDefs();
@@ -236,7 +237,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
     };
 
     compute_info.release_state_func = [](FunctionState state) {
-      // the `state` is a webnn::model managed by unique_ptr
+      // The `state` is a webnn::model managed by unique_ptr.
       ORT_UNUSED_PARAMETER(state);
     };
 
@@ -264,7 +265,7 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
         auto tensor_info = input_tensor.GetTensorTypeAndShapeInfo();
         auto shape = tensor_info.GetShape();
         // If we have an empty shape, this is a scalar input,
-        // Since all the input output of WebNN EP is MultiArray, we will make the scalar input as a {1} MultiArray
+        // Since all the input output of WebNN EP is MultiArray, we will make the scalar input as a {1} MultiArray.
         if (shape.empty())
           shape.push_back(1);
         std::vector<int> temp(shape.size());
@@ -279,8 +280,8 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
       }
 
       // From this point we will need to take the exclusive lock on the model until the Predict is
-      // performed, to block other threads to perform Predict on the same model
-      // TODO, investigate concurrent runs for different executions from the same model
+      // performed, to block other threads to perform Predict on the same model.
+      // TODO, investigate concurrent runs for different executions from the same model.
       {
         std::unique_lock<OrtMutex> lock(model->GetMutex());
         InlinedHashMap<std::string, webnn::OnnxTensorData> outputs;
@@ -291,8 +292,8 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
           auto output_shape = output_info.shape;
           auto output_type = output_info.data_type;
 
-          // Since WebNN EP use {1} tensor as scalar, if the model output should have empty shape
-          // We are going to replace the {1} shape of the output back to {}
+          // Since WebNN EP use {1} tensor as scalar, if the model output should have empty shape.
+          // We are going to replace the {1} shape of the output back to {}.
           if (model->IsScalarOutput(output_name))
             output_shape.clear();
 

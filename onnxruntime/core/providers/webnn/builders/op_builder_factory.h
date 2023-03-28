@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma once
@@ -13,9 +14,9 @@ struct OpBuilderRegistrations {
   InlinedHashMap<std::string, const IOpBuilder*> op_builder_map;
 };
 
-// Get the lookup table with IOpBuilder delegates for different onnx operators
+// Get the lookup table with IOpBuilder delegates for different onnx operators.
 // Note, the lookup table should have same number of entries as the result of CreateOpSupportCheckers()
-// in op_support_checker.h
+// in op_support_checker.h.
 const InlinedHashMap<std::string, const IOpBuilder*>& GetOpBuilders();
 
 void CreateActivationOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations);

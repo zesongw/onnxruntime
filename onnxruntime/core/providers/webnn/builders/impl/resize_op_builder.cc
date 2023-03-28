@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include <math.h>
@@ -18,7 +19,7 @@ namespace onnxruntime {
 namespace webnn {
 
 class ResizeOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  public:
   void AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const override;
 
@@ -26,13 +27,13 @@ class ResizeOpBuilder : public BaseOpBuilder {
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                          const logging::Logger& logger) const override;
 
-  // Resize opset 10- is very different than Resize opset 11+, with many key attributes missing
-  // We only support Resize opset 11+ here
+  // Resize opset 10- is very different than Resize opset 11+, with many key attributes missing.
+  // We only support Resize opset 11+ here.
   int GetMinSupportedOpSet(const Node& /* node */) const override { return 11; }
 };
 
@@ -81,15 +82,15 @@ bool GetResizeOutputSizes(const InitializedTensorSet& initializers,
   return true;
 }
 
-// Add operator related
+// Add operator related.
 
 void ResizeOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const {
-  // We don't really use ROI here, so add it to skipped list if it's an initializer tensor
+  // We don't really use ROI here, so add it to skipped list if it's an initializer tensor.
   model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());  // ROI
   model_builder.AddInputToSkip(node.InputDefs()[1]->Name());        // ROI
 
-  // We will still add scales to the skipped list even sizes are present
-  // since there is no use of it, we will not process it later
+  // We will still add scales to the skipped list even sizes are present,
+  // since there is no use of it, we will not process it later.
   model_builder.AddInitializerToSkip(node.InputDefs()[2]->Name());  // scales
   model_builder.AddInputToSkip(node.InputDefs()[2]->Name());        // scales
 
@@ -107,7 +108,7 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   const auto mode = helper.Get("mode", "nearest");
   if (mode == "linear") {
     options.set("mode", emscripten::val("linear"));
-  } else {  // we already checked the mode must be NN or Bilinear in IsOpSupportedImpl
+  } else {  // we already checked the mode must be NN or Bilinear in IsOpSupportedImpl.
     options.set("mode", emscripten::val("nearest-neighbor"));
   }
 
@@ -118,11 +119,11 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   std::vector<int32_t> sizes;
   std::vector<float> scales_hw;
   std::vector<int32_t> sizes_hw;
-  if (input_defs.size() == 3) {  // use scales
+  if (input_defs.size() == 3) {  // Use scales.
     ORT_RETURN_IF_NOT(GetResizeScales(initializers, node, scales, logger), "Error getting resize scales");
     scales_hw = {scales[2], scales[3]};
     options.set("scales", emscripten::val::array(scales_hw));
-  } else {  // we already checked number of inputs in IsOpSupportedImpl
+  } else {  // We already checked number of inputs in IsOpSupportedImpl.
     std::vector<int64_t> output_sizes;
     ORT_RETURN_IF_NOT(GetResizeOutputSizes(initializers, node, output_sizes, logger),
                       "Error getting resize output_sizes");
@@ -141,7 +142,7 @@ Status ResizeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                                         const logging::Logger& logger) const {
@@ -158,7 +159,7 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
     return false;
   }
 
-  {  // check attributes
+  {  // Check attributes.
     NodeAttrHelper helper(node);
     const auto mode = helper.Get("mode", "nearest");
     bool is_linear_resize = mode == "linear";
@@ -173,32 +174,9 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
       LOGS(logger, VERBOSE) << "Resize does not support exclude_outside for now";
       return false;
     }
-
-    // const auto coord_trans_mode = helper.Get("coordinate_transformation_mode", "half_pixel");
-    // bool using_asymmetric = coord_trans_mode == "asymmetric";
-    // if (is_linear_resize) {
-    //   // TODO, add support of align_corners and half_pixel
-    //   if (!using_asymmetric) {
-    //     LOGS(logger, VERBOSE) << "Resize bilinear, unsupported coord_trans_mode, " << coord_trans_mode;
-    //     return false;
-    //   }
-    // } else {
-    //   // nearest neighbor resizing
-    //   // For nearest neighbor, we only support coord_trans_mode == "asymmetric" && nearest_mode == "floor"
-    //   if (!using_asymmetric) {
-    //     LOGS(logger, VERBOSE) << "Resize nearest neighbor, unsupported coord_trans_mode, " << coord_trans_mode;
-    //     return false;
-    //   }
-
-    //   const auto nearest_mode = helper.Get("nearest_mode", "round_prefer_floor");
-    //   if (nearest_mode != "floor") {
-    //     LOGS(logger, VERBOSE) << "Resize nearest neighbor, unsupported nearest_mode, " << nearest_mode;
-    //     return false;
-    //   }
-    // }
   }
 
-  {  // scales and sizes (if present) must be initializers
+  {  // scales and sizes (if present) must be initializers.
     if (input_defs.size() < 3) {
       LOGS(logger, VERBOSE) << "Input scales or sizes of Resize must be known";
       return false;
@@ -216,8 +194,8 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
       return false;
     }
 
-    // We want to check if the scales or sizes are not trying to resize on N/C channels here
-    if (input_defs.size() == 3) {  // we are using scales
+    // We want to check if the scales or sizes are not trying to resize on N/C channels here.
+    if (input_defs.size() == 3) {  // We are using scales.
       std::vector<float> scales;
       if (!GetResizeScales(initializers, node, scales, logger))
         return false;
@@ -231,12 +209,12 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
         return false;
       }
 
-      // For now we only support upscale, so the scale_h and scale_w should be an integer >= 1
-      // TODO support ResizeBilinear
+      // For now we only support upscale, so the scale_h and scale_w should be an integer >= 1.
+      // TODO support ResizeBilinear.
       float scale_h = scales[2];
       float scale_w = scales[3];
 
-      // Onnx spec requires scale to be a positive float, so we are not checking that here
+      // Onnx spec requires scale to be a positive float, so we are not checking that here.
       if (roundf(scale_h) != scale_h) {
         LOGS(logger, VERBOSE) << "Resize: scale_h: " << scale_h << " is not a whole number";
         return false;
@@ -247,7 +225,7 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
         return false;
       }
     } else {
-      // we are using sizes
+      // We are using sizes.
       std::vector<int64_t> output_sizes;
       if (!GetResizeOutputSizes(initializers, node, output_sizes, logger))
         return false;
@@ -263,25 +241,25 @@ bool ResizeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers
         return false;
       }
 
-      // For now we only support upscale, so the output_size_h and output_size_w should be an integer >= 1
+      // For now we only support upscale, so the output_size_h and output_size_w should be an integer >= 1.
       // TODO support ResizeBilinear
-      // auto output_size_h = output_sizes[2];
-      // auto output_size_w = output_sizes[3];
-      // auto input_size_h = input_shape[2];
-      // auto input_size_w = input_shape[3];
+      auto output_size_h = output_sizes[2];
+      auto output_size_w = output_sizes[3];
+      auto input_size_h = input_shape[2];
+      auto input_size_w = input_shape[3];
 
-      // Onnx spec requires output sizes to be a positive integer, so we are not checking that here
-      // if (output_size_h % input_size_h != 0) {
-      //   LOGS(logger, VERBOSE) << "Resize: output_size_h: " << output_size_h
-      //                         << " is not a multiple of input_size_h: " << input_size_h;
-      //   return false;
-      // }
+      // Onnx spec requires output sizes to be a positive integer, so we are not checking that here.
+      if (output_size_h % input_size_h != 0) {
+        LOGS(logger, VERBOSE) << "Resize: output_size_h: " << output_size_h
+                              << " is not a multiple of input_size_h: " << input_size_h;
+        return false;
+      }
 
-      // if (output_size_w % input_size_w != 0) {
-      //   LOGS(logger, VERBOSE) << "Resize: output_size_w: " << output_size_w
-      //                         << " is not a multiple of input_size_w: " << input_size_w;
-      //   return false;
-      // }
+      if (output_size_w % input_size_w != 0) {
+        LOGS(logger, VERBOSE) << "Resize: output_size_w: " << output_size_w
+                              << " is not a multiple of input_size_w: " << input_size_w;
+        return false;
+      }
     }
   }
 

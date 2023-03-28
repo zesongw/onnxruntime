@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include <vector>
@@ -18,7 +19,7 @@ bool GetShape(const NodeArg& node_arg, std::vector<int64_t>& shape, const loggin
     return false;
   }
 
-  // We already checked the shape has no dynamic dimension
+  // We already checked the shape has no dynamic dimension.
   for (const auto& dim : shape_proto->dim()) {
     shape.push_back(dim.dim_value());
   }
@@ -39,7 +40,7 @@ bool IsNodeSupported(const Node& node, const GraphViewer& graph_viewer, const lo
 bool IsInputSupported(const NodeArg& input, const std::string& parent_name, const logging::Logger& logger) {
   const auto& input_name = input.Name();
   const auto* shape_proto = input.Shape();
-  // We do not support input with no shape
+  // We do not support input with no shape.
   if (!shape_proto) {
     LOGS(logger, VERBOSE) << "Input [" << input_name << "] of [" << parent_name
                           << "] has not shape";
@@ -47,7 +48,7 @@ bool IsInputSupported(const NodeArg& input, const std::string& parent_name, cons
   }
 
   for (const auto& dim : shape_proto->dim()) {
-    // For now we workaround dynamic shape support by assuming 1
+    // For now we workaround dynamic shape support by assuming 1.
     if (!dim.has_dim_value()) {
       LOGS(logger, VERBOSE) << "Dynamic shape is not supported for now, assume to be 1, for input:" << input_name;
     }
@@ -74,7 +75,7 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
     auto node_idx = node_indices[i];
     const auto* node(graph_viewer.GetNode(node_idx));
     bool supported = false;
-    // Firstly check if platform supports the WebNN op
+    // Firstly check if platform supports the WebNN op.
     if (CheckDependency(node->OpType(), wnn_builder_)) {
       LOGS(logger, VERBOSE) << "Operator type: [" << node->OpType() << "] is supported by browser";
       supported = IsNodeSupported(*node, graph_viewer, logger);

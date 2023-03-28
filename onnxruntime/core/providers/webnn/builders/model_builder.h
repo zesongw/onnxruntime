@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma once
@@ -24,7 +25,7 @@ class ModelBuilder {
 
   Status Compile(std::unique_ptr<Model>& model) ORT_MUST_USE_RESULT;
 
-  // Accessors for members
+  // Accessors for members.
   const GraphViewer& GetGraphViewer() const { return graph_viewer_; }
   const InitializedTensorSet& GetInitializerTensors() const { return graph_viewer_.GetAllInitializedTensors(); }
 
@@ -32,25 +33,25 @@ class ModelBuilder {
   const emscripten::val& GetContext() const { return wnn_context_; }
   const emscripten::val& GetOperand(const std::string& name) const { return wnn_operands_.at(name); }
   void AddOperand(const std::string& name, const emscripten::val& operand);
-  // Use the buffers to persist WebNN allocated data like transposed weight
-  // It ensures the validity during inference session
+  // Use the buffers to persist WebNN allocated data like transposed weight.
+  // It ensures the validity during inference session.
   std::vector<std::unique_ptr<uint8_t[]>> mem_persist_buffers_;
-  // Add a constant operand (allocate persist buffer and move the ownership to mem_persist_buffers_)
+  // Add a constant operand (allocate persist buffer and move the ownership to mem_persist_buffers_).
   Status AddOperandFromPersistMemoryBuffer(
       const std::string& name, const void* buffer,
       const size_t size, const std::vector<uint32_t> shape, const size_t element_size = 4);
-  // Find if an output has a fuseable activation (e.g., Relu)
+  // Find if an output has a fuseable activation (e.g., Relu).
   emscripten::val FindActivation(const Node& node, const NodeArg& output,
                                  const InlinedHashSet<std::string> supported_nodes = {});
 
   const InlinedHashSet<std::string>&
   GetFusedActivations() const { return fused_activations_; }
 
-  // The initializer will be processed separately, skip it as an initializer
+  // The initializer will be processed separately, skip it as an initializer.
   void AddInitializerToSkip(const std::string& tensor_name);
 
   // There are some input which will not be used, add it to a list which will not
-  // be added to CoreML model, since CoreML does not like input unused
+  // be added to CoreML model, since CoreML does not like input unused.
   void AddInputToSkip(const std::string& input_name);
 
   std::string GetUniqueName(const std::string& base_name);
@@ -77,17 +78,17 @@ class ModelBuilder {
   uint32_t name_token_{0};
   InlinedHashSet<std::string> unique_names_;
 
-  // All activation nodes (e.g., Relu) as a map <NodeIndex, FusionOperator>
+  // All activation nodes (e.g., Relu) as a map <NodeIndex, FusionOperator>.
   InlinedHashMap<NodeIndex, emscripten::val> activation_nodes_;
 
   // Convert the onnx model to WebNN operands
   Status Initialize() ORT_MUST_USE_RESULT;
 
   void PreprocessInitializers();
-  // Preprocess all the activation nodes (e.g., Relu) for easy query later
+  // Preprocess all the activation nodes (e.g., Relu) for easy query later.
   void PreprocessActivations();
 
-  // Copy and process all the initializers to WebNN constants
+  // Copy and process all the initializers to WebNN constants.
   Status RegisterInitializers() ORT_MUST_USE_RESULT;
 
   Status AddOperations() ORT_MUST_USE_RESULT;
@@ -95,7 +96,7 @@ class ModelBuilder {
   Status RegisterModelOutputs() ORT_MUST_USE_RESULT;
   Status RegisterModelInputOutput(const NodeArg& node_arg, bool is_input) ORT_MUST_USE_RESULT;
 
-  // Record the onnx scalar output names
+  // Record the onnx scalar output names.
   void AddScalarOutput(const std::string& output_name);
 
   static const IOpBuilder* GetOpBuilder(const Node& node);

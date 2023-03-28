@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/common/safeint.h"
@@ -16,7 +17,7 @@ namespace onnxruntime {
 namespace webnn {
 
 class ConvOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  public:
   void AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const override;
 
@@ -24,14 +25,14 @@ class ConvOpBuilder : public BaseOpBuilder {
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& /* initializers */, const Node& /* node */,
                          const logging::Logger& /* logger */) const override;
 };
 
 void ConvOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const {
-  // skip the weight for conv as we need to transpose
+  // skip the weight for conv as we need to transpose.
   model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());  // W
   model_builder.AddInputToSkip(node.InputDefs()[1]->Name());
 }
@@ -53,9 +54,9 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
   options.set("dilations", emscripten::val::array(dilations));
   options.set("inputLayout", emscripten::val("nhwc"));
   options.set("groups", group);
-  // Add Padding
-  // Usually using autopadding is more efficient than using explicit padding
-  // Try to see if we can map explicit padding to auto padding
+  // Add Padding.
+  // Usually using autopadding is more efficient than using explicit padding.
+  // Try to see if we can map explicit padding to auto padding.
   std::vector<int64_t> input_shape;
   ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
   AutoPadType auto_pad_type;
@@ -75,7 +76,7 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
     options.set("padding", emscripten::val::array(pads));
   }
 
-  // Add bias if present
+  // Add bias if present.
   if (input_defs.size() > 2) {
     options.set("bias", model_builder.GetOperand(input_defs[2]->Name()));
   }
@@ -158,7 +159,7 @@ Status AddInitializerInNewLayout(ModelBuilder& model_builder,
   return Status::OK();
 }
 
-// Add operator related
+// Add operator related.
 
 Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                             const logging::Logger& logger) const {
@@ -199,7 +200,7 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
     std::vector<int32_t> output_padding;
     if (helper.HasAttr("output_shape")) {
       // Default value of 'output_shape' will be ignore as we already check if
-      // it's existed
+      // it's existed.
       output_shape = helper.Get("output_shape", std::vector<int32_t>{-1, -1});
       options.set("outputSizes", emscripten::val::array(output_shape));
     } else {
@@ -215,7 +216,7 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool ConvOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                                       const logging::Logger& logger) const {

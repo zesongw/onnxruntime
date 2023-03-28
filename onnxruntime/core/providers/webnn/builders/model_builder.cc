@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include <fstream>
@@ -97,7 +98,7 @@ Status ModelBuilder::RegisterInitializers() {
     const auto& shape = tensor.dims();
     std::vector<int32_t> dims;
     if (shape.empty()) {
-      // This is a scalar initializer, WebNN requires a shape, make this a {1} tensor
+      // This is a scalar initializer, WebNN requires a shape, make this a {1} tensor.
       dims = {1};
     } else {
       std::transform(shape.cbegin(), shape.cend(),
@@ -119,7 +120,7 @@ Status ModelBuilder::RegisterInitializers() {
                                                          reinterpret_cast<float*>(unpacked_tensor.data()))};
       operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
     } else {
-      // TODO: support other type
+      // TODO: support other type.
       return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                              "The initializer of graph has unsupported type, name: ",
                              tensor.name(), " type: ", data_type);
@@ -135,26 +136,27 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
   const std::string input_output_type = is_input ? "input" : "output";
 
   if (is_input) {
-    // input should not be an initializer
+    // Input should not be an initializer.
     if (Contains(GetInitializerTensors(), name))
       return Status::OK();
 
-    // This input will not be used
+    // This input will not be used.
     if (Contains(skipped_inputs_, name))
       return Status::OK();
   }
 
   std::vector<int32_t> dims;
-  {  // input_output shape
+  {  // input_output shape.
     const auto* shape_proto = node_arg.Shape();
     ORT_RETURN_IF(shape_proto == nullptr,
                   "shape_proto cannot be null for ", input_output_type, ": ", name);
     const auto& shape = shape_proto->dim();
     if (shape.empty()) {
-      // If we have an empty shape, this is a scalar input,
+      // If we have an empty shape, this is a scalar input.
       dims.push_back(1);
 
-      // we need to change the shapes of these scalar outputs back to {} when WebNN EP returns these values to ORT
+      // We need to change the shapes of these scalar outputs back to {}
+      // when WebNN EP returns these values to ORT.
       if (!is_input) {
         AddScalarOutput(name);
       }
@@ -162,7 +164,7 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
       dims.reserve(shape.size());
       for (const auto& dim : shape) {
         if (!dim.has_dim_value()) {
-          // FIXME: support dyanmic shape
+          // FIXME: support dyanmic shape.
           dims.push_back(1);
         } else {
           dims.push_back(SafeInt<int32_t>(dim.dim_value()));
@@ -189,7 +191,7 @@ Status ModelBuilder::RegisterModelInputOutput(const NodeArg& node_arg, bool is_i
         desc.set("type", emscripten::val("float32"));
         break;
       default: {
-        // TODO: support other type
+        // TODO: support other type.
         return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                                "The  ", input_output_type, " of graph doesn't have valid type, name: ", name,
                                " type: ", type_proto->tensor_type().elem_type());
@@ -278,7 +280,7 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   return Status::OK();
 }
 
-// supported_nodes is provided by the op to indicate whether it can be fused with the activation node
+// supported_nodes is provided by the op to indicate whether it can be fused with the activation node.
 emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& output,
                                              const InlinedHashSet<std::string> supported_nodes) {
   emscripten::val fused_op = emscripten::val::null();
@@ -293,15 +295,15 @@ emscripten::val ModelBuilder::FindActivation(const Node& node, const NodeArg& ou
         fused_op = activation_nodes_.at(dst_node.Index());
       }
     } else {
-      // if there is any other non-relu node using the output
-      // will add relu separately
+      // If there is any other non-relu node using the output
+      // will add relu separately.
       if (&output == dst_input) {
         return emscripten::val::null();
       }
     }
   }
 
-  // if output is a graph output, will add relu separately
+  // If output is a graph output, will add relu separately.
   if (fused_op != emscripten::val::null()) {
     for (const auto* graph_output : graph_viewer_.GetOutputs()) {
       if (&output == graph_output) {

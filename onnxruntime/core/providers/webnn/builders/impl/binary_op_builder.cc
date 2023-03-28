@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include <core/providers/common.h>
@@ -13,17 +14,17 @@ namespace onnxruntime {
 namespace webnn {
 
 class BinaryOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   int GetMinSupportedOpSet(const Node& node) const override;
 };
 
-// Add operator related
+// Add operator related.
 
 Status BinaryOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                               const logging::Logger& /* logger */) const {
@@ -43,10 +44,10 @@ Status BinaryOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 int BinaryOpBuilder::GetMinSupportedOpSet(const Node& /* node */) const {
-  // Add/Sub/Mul/Div opset 6- has broadcast attributes we do not support now
+  // Add/Sub/Mul/Div opset 6- has broadcast attributes we do not support now.
   return 7;
 }
 

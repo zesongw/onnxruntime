@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma once
@@ -26,7 +27,7 @@ bool GetShape(const NodeArg& node_arg, std::vector<int64_t>& shape, const loggin
 
 bool IsInputSupported(const NodeArg& node_arg, const std::string& parent_name, const logging::Logger& logger);
 
-// Get a list of groups of supported nodes, each group represents a subgraph supported by WebNN EP
+// Get a list of groups of supported nodes, each group represents a subgraph supported by WebNN EP.
 std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer,
                                                       const emscripten::val& wnn_builder_,
                                                       const logging::Logger& logger);
@@ -60,7 +61,7 @@ inline bool CheckSingleOp(const std::string& op_type, const emscripten::val& wnn
   return op_map.find(op_type) != op_map.end() && wnn_builder_[op_map[op_type]].as<bool>();
 }
 
-// Check the single OP then check its dependency
+// Check the single OP then check its dependency.
 inline bool CheckDependency(const std::string& op_type, const emscripten::val& wnn_builder_) {
   if (!CheckSingleOp(op_type, wnn_builder_)) {
     return false;

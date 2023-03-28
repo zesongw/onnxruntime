@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma once
@@ -14,7 +15,7 @@ class BaseOpBuilder : public IOpBuilder {
  public:
   virtual ~BaseOpBuilder() = default;
 
-  // Add operator related
+  // Add operator related.
  public:
   virtual void AddInitializersToSkip(ModelBuilder& /* model_builder */, const Node& /* node */) const override {}
   Status AddToModelBuilder(ModelBuilder& model_builder, const Node& node,
@@ -24,7 +25,7 @@ class BaseOpBuilder : public IOpBuilder {
   virtual Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                        const logging::Logger& logger) const ORT_MUST_USE_RESULT = 0;
 
-  // Operator support related
+  // Operator support related.
  public:
   bool IsOpSupported(const InitializedTensorSet& initializers, const Node& node,
                      const logging::Logger& logger) const override;

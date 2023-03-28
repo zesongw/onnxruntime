@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma once
@@ -26,10 +27,10 @@ class WebNNExecutionProvider : public IExecutionProvider {
 
   DataLayout GetPreferredLayout() const override { return DataLayout::NHWC; }
 
-  // We implement the Compile that takes FusedNodeAndGraph instances
+  // We implement the Compile that takes FusedNodeAndGraph instances.
   FusionStyle GetFusionStyle() const override { return FusionStyle::FilteredGraphViewer; }
 
-  // WebNN does not support concurrent execution of a kernel
+  // WebNN does not support concurrent execution of a kernel.
   bool ConcurrentRunSupported() const override { return false; }
 
 #if !defined(ORT_MINIMAL_BUILD) || defined(ORT_EXTENDED_MINIMAL_BUILD)

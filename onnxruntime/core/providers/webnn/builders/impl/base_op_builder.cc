@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include <core/providers/common.h>
@@ -12,9 +13,7 @@
 namespace onnxruntime {
 namespace webnn {
 
-// Shared functions
-
-// TODO, move this to shared_library
+// Shared functions.
 bool HasExternalInitializer(const InitializedTensorSet& initializers, const Node& node,
                             const logging::Logger& logger) {
   for (const auto* node_arg : node.InputDefs()) {
@@ -34,7 +33,7 @@ bool HasExternalInitializer(const InitializedTensorSet& initializers, const Node
   return false;
 }
 
-// Add operator related
+// Add operator related.
 
 Status BaseOpBuilder::AddToModelBuilder(ModelBuilder& model_builder, const Node& node,
                                         const logging::Logger& logger) const {
@@ -48,14 +47,14 @@ Status BaseOpBuilder::AddToModelBuilder(ModelBuilder& model_builder, const Node&
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool BaseOpBuilder::IsOpSupported(const InitializedTensorSet& initializers, const Node& node,
                                   const logging::Logger& logger) const {
   if (!HasSupportedInputs(node, logger))
     return false;
 
-  // We do not support external initializers for now
+  // We do not support external initializers for now.
   if (HasExternalInitializer(initializers, node, logger))
     return false;
 
@@ -77,8 +76,7 @@ bool BaseOpBuilder::HasSupportedInputs(const Node& node, const logging::Logger& 
 }
 
 bool BaseOpBuilder::HasSupportedInputsImpl(const Node& node, const logging::Logger& logger) const {
-  // We only check the type of input 0 by default
-  // specific op builder can override this
+  // We only check the type of input 0 by default, specific op builder can override this.
   const auto& input = *node.InputDefs()[0];
 
   int32_t input_type;

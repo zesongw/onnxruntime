@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/common/safeint.h"
@@ -13,13 +14,13 @@ namespace onnxruntime {
 namespace webnn {
 
 class TransposeOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 };
 
-// Add operator related
+// Add operator related.
 
 Status TransposeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                                  const Node& node,

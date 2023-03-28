@@ -986,7 +986,7 @@ if (onnxruntime_USE_WEBNN)
   add_compile_definitions(USE_WEBNN=1)
 
   # These are shared utils,
-  # TODO, move this to a separated lib when used by EPs other than NNAPI and CoreML
+  # TODO, move this to a separated lib when used by EPs other than NNAPI and CoreML.
   file(GLOB_RECURSE onnxruntime_providers_shared_utils_cc_srcs CONFIGURE_DEPENDS
     "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.h"
     "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.cc"
@@ -998,7 +998,7 @@ if (onnxruntime_USE_WEBNN)
     "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.cc"
   )
 
-  # Add builder source code
+  # Add builder source code.
   file(GLOB_RECURSE
     onnxruntime_providers_webnn_cc_srcs_nested CONFIGURE_DEPENDS
     "${ONNXRUNTIME_ROOT}/core/providers/webnn/builders/*.h"

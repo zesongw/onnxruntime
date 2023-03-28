@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/common/safeint.h"
@@ -17,7 +18,7 @@ namespace onnxruntime {
 namespace webnn {
 
 class ReshapeOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  public:
   void AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const override;
 
@@ -25,16 +26,16 @@ class ReshapeOpBuilder : public BaseOpBuilder {
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                          const logging::Logger& logger) const override;
 
-  // Reshape opset 4- uses attributes for new shape which we do not support for now
+  // Reshape opset 4- uses attributes for new shape which we do not support for now.
   int GetMinSupportedOpSet(const Node& /* node */) const override { return 5; }
 };
 
-// Add operator related
+// Add operator related.
 
 void ReshapeOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const {
   model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());
@@ -66,7 +67,7 @@ Status ReshapeOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool ReshapeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                                          const logging::Logger& logger) const {
@@ -85,7 +86,7 @@ bool ReshapeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializer
     return false;
   }
 
-  const int64_t* raw_perm = reinterpret_cast<const int64_t*>(unpacked_tensor.data());
+  const int64_t* raw_new_shape = reinterpret_cast<const int64_t*>(unpacked_tensor.data());
   const auto& perm_dims = perm_tensor.dims();
   if (perm_dims.empty() || perm_dims[0] == 0) {
     LOGS(logger, VERBOSE) << "New shape of reshape cannot be empty";
@@ -101,12 +102,12 @@ bool ReshapeOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializer
     return false;
   }
 
-  // WebNN reshape does not support 0 as dimension
+  // WebNN reshape does not support 0 as dimension.
   NodeAttrHelper helper(node);
   const bool allow_zero = helper.Get("allowzero ", 0) == 1;
   if (allow_zero) {
     for (int64_t i = 0; i < perm_dims[0]; i++) {
-      if (raw_perm[i] == 0) {
+      if (raw_new_shape[i] == 0) {
         LOGS_DEFAULT(VERBOSE) << "Reshape doesn't support 0 reshape dimension when allowzero is enabled";
         return false;
       }

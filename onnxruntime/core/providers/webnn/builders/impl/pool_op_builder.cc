@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/common/safeint.h"
@@ -15,18 +16,18 @@ namespace onnxruntime {
 namespace webnn {
 
 class PoolOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                          const logging::Logger& logger) const override;
 };
 
-// Add operator related
+// Add operator related.
 
 Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                             const Node& node,
@@ -63,9 +64,9 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   options.set("dilations", emscripten::val::array(dilations));
   options.set("layout", emscripten::val("nhwc"));
 
-  // Add Padding
-  // Usually using autopadding is more efficient than using explicit padding
-  // Try to see if we can map explicit padding to auto padding
+  // Add Padding.
+  // Usually using autopadding is more efficient than using explicit padding.
+  // Try to see if we can map explicit padding to auto padding.
   const auto onnx_kernel_shape = helper.Get("kernel_shape", std::vector<int64_t>{0, 0});
   const auto onnx_strides = helper.Get("strides", std::vector<int64_t>{1, 1});
   const auto onnx_pads = helper.Get("pads", std::vector<int64_t>{0, 0, 0, 0});
@@ -102,7 +103,7 @@ Status PoolOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 bool PoolOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& /* initializers */, const Node& node,
                                       const logging::Logger& logger) const {
   const auto& op_type = node.OpType();

@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/providers/common.h"
@@ -14,21 +15,21 @@ namespace onnxruntime {
 namespace webnn {
 
 class BatchNormalizationOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  private:
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                          const logging::Logger& logger) const override;
 
-  // BatchNormalization opset 6- has unsupported attributes
+  // BatchNormalization opset 6- has unsupported attributes.
   int GetMinSupportedOpSet(const Node& /* node */) const override { return 7; }
 };
 
-// Add operator related
+// Add operator related.
 
 Status BatchNormalizationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
                                                           const Node& node,
@@ -52,7 +53,7 @@ Status BatchNormalizationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_bu
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool BatchNormalizationOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                                                     const logging::Logger& logger) const {
@@ -68,8 +69,8 @@ bool BatchNormalizationOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& 
     return false;
 
   const auto input_size = input_shape.size();
-  // TODO, support 1d batch normalization (input is 3d)
-  // To map 1d input {N,C,H} to 2d {N,C,H,1} first and then squeeze back after
+  // TODO, support 1d batch normalization (input is 3d).
+  // To map 1d input {N,C,H} to 2d {N,C,H,1} first and then squeeze back after.
   if (input_size != 4) {
     LOGS(logger, VERBOSE) << "BN only support 4d shape for now, input is "
                           << input_size << "d shape";

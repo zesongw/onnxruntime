@@ -1,11 +1,12 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 #pragma once
 
 #include "onnxruntime_c_api.h"
 
 // WebNNDeviceFlags and WebNNPowerFlags are bool options we want to set for WebNN EP
-// These enums are defined as bit flats, and cannot have negative values
+// These enums are defined as bit flags, and cannot have negative values
 // To generate uint32_t webnn_device_flags and webnn_power_flags for using with
 // OrtSessionOptionsAppendExecutionProvider_WebNN below,
 //   uint32_t webnn_device_flags = 0;

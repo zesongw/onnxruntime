@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #pragma once
@@ -14,7 +15,7 @@ namespace onnxruntime {
 namespace webnn {
 
 struct OnnxTensorInfo {
-  const int32_t data_type;  // Uses TensorProto::DataType
+  const int32_t data_type;  // Uses TensorProto::DataType.
   const std::vector<int64_t> shape;
 };
 
@@ -35,10 +36,10 @@ class Model {
 
   bool IsScalarOutput(const std::string& output_name) const;
 
-  // Mutex for exclusive lock to this model object
+  // Mutex for exclusive lock to this model object.
   OrtMutex& GetMutex() { return mutex_; }
 
-  // Input and output names in the onnx model's order
+  // Input and output names in the onnx model's order.
   const std::vector<std::string>& GetInputs() const { return inputs_; }
   void SetInputs(std::vector<std::string>&& inputs) { inputs_ = std::move(inputs); }
 
@@ -48,11 +49,11 @@ class Model {
   const OnnxTensorInfo& GetInputOutputInfo(const std::string& name) const;
 
   // Set the mapping between input/output name and ORT kernel context
-  // input/output index, at execution time
+  // input/output index, at execution time.
   void SetInputMap(InlinedHashMap<std::string, size_t>&& input_map);
   void SetOutputMap(InlinedHashMap<std::string, size_t>&& output_map);
 
-  // Get the ORT kernel context input/output index with given name
+  // Get the ORT kernel context input/output index with given name.
   size_t GetMappedInputIdx(const std::string& name) const;
   size_t GetMappedOutputIdx(const std::string& name) const;
 

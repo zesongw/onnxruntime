@@ -1,4 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
 #include "core/providers/common.h"
@@ -12,7 +13,7 @@ namespace onnxruntime {
 namespace webnn {
 
 class ClipOpBuilder : public BaseOpBuilder {
-  // Add operator related
+  // Add operator related.
  public:
   void AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const override;
 
@@ -20,16 +21,16 @@ class ClipOpBuilder : public BaseOpBuilder {
   Status AddToModelBuilderImpl(ModelBuilder& model_builder, const Node& node,
                                const logging::Logger& logger) const override ORT_MUST_USE_RESULT;
 
-  // Operator support related
+  // Operator support related.
  private:
   bool IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                          const logging::Logger& logger) const override;
 };
 
-// Add operator related
+// Add operator related.
 
 void ClipOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const {
-  // Both min and max values will be injected into the layer, no need to add to the model
+  // Both min and max values will be injected into the layer, no need to add to the model.
   if (node.SinceVersion() >= 11) {
     if (node.InputDefs().size() > 1)
       model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());
@@ -63,7 +64,7 @@ Status ClipOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   return Status::OK();
 }
 
-// Operator support related
+// Operator support related.
 
 bool ClipOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, const Node& node,
                                       const logging::Logger& logger) const {
