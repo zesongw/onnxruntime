@@ -78,8 +78,6 @@ void ModelBuilder::PreprocessActivations() {
       activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("leakyRelu", options));
     } else if (op_type == "Sigmoid") {
       activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("sigmoid"));
-    } else if (op_type == "Tanh") {
-      activation_nodes_.emplace(node->Index(), wnn_builder_.call<emscripten::val>("tanh"));
     } else if (op_type == "Clip") {
       float minValue, maxValue;
       GetClipMinMax(GetInitializerTensors(), *node, minValue, maxValue, logger_);

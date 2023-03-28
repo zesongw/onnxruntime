@@ -140,19 +140,8 @@ bool GemmOpBuilder::IsOpSupportedImpl(const InitializedTensorSet& initializers, 
 }
 
 void CreateGemmOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations) {
-  if (op_registrations.op_builder_map.find(op_type) != op_registrations.op_builder_map.cend())
-    return;
-
-  static std::vector<std::string> op_types =
-      {
-          "Gemm",
-          "MatMul",
-      };
-
   op_registrations.builders.push_back(std::make_unique<GemmOpBuilder>());
-  for (const auto& type : op_types) {
-    op_registrations.op_builder_map.emplace(type, op_registrations.builders.back().get());
-  }
+  op_registrations.op_builder_map.emplace(op_type, op_registrations.builders.back().get());
 }
 }  // namespace webnn
 }  // namespace onnxruntime

@@ -31,24 +31,16 @@ bool IsInputSupported(const NodeArg& node_arg, const std::string& parent_name, c
 std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer,
                                                       const emscripten::val& wnn_builder_,
                                                       const logging::Logger& logger);
-
-inline InlinedHashMap<std::string, std::vector<std::string>> op_dependency = {
-    {"GRU", {"Split"}}};
-
 inline InlinedHashMap<std::string, std::string> op_map = {
     {"Add", "add"},
     {"Relu", "relu"},
     {"LeakyRelu", "leakyRelu"},
     {"Sigmoid", "sigmoid"},
-    {"Tanh", "tanh"},
-    {"BatchNormalization", "batchNormalization"},
     {"Clip", "clamp"},
     {"Conv", "conv2d"},
     {"ConvTranspose", "convTranspose2d"},
     {"Concat", "concat"},
     {"Gemm", "gemm"},
-    {"MatMul", "matmul"},
-    {"GRU", "gru"},
     {"GlobalAveragePool", "averagePool2d"},
     {"GlobalMaxPool", "maxPool2d"},
     {"AveragePool", "averagePool2d"},
@@ -59,21 +51,6 @@ inline InlinedHashMap<std::string, std::string> op_map = {
 
 inline bool CheckSingleOp(const std::string& op_type, const emscripten::val& wnn_builder_) {
   return op_map.find(op_type) != op_map.end() && wnn_builder_[op_map[op_type]].as<bool>();
-}
-
-// Check the single OP then check its dependency.
-inline bool CheckDependency(const std::string& op_type, const emscripten::val& wnn_builder_) {
-  if (!CheckSingleOp(op_type, wnn_builder_)) {
-    return false;
-  }
-  if (Contains(op_dependency, op_type)) {
-    for (auto& op : op_dependency[op_type]) {
-      if (!CheckSingleOp(op, wnn_builder_)) {
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 }  // namespace webnn

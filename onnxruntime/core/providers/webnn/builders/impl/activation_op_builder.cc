@@ -55,13 +55,6 @@ Status ActivationOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     } else {
       output = model_builder.GetBuilder().call<emscripten::val>("sigmoid", input);
     }
-  } else if (op_type == "Tanh") {
-    if (Contains(model_builder.GetFusedActivations(), node.InputDefs()[0]->Name())) {
-      LOGS_DEFAULT(VERBOSE) << "Tanh Node [" << node.Name() << "] fused";
-      output = input;
-    } else {
-      output = model_builder.GetBuilder().call<emscripten::val>("tanh", input);
-    }
   } else {
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                            "ActivationOpBuilder::AddToModelBuilderImpl, unknown op: ", op_type);
@@ -82,7 +75,7 @@ void CreateActivationOpBuilder(const std::string& op_type, OpBuilderRegistration
   if (op_registrations.op_builder_map.find(op_type) != op_registrations.op_builder_map.cend())
     return;
 
-  static std::vector<std::string> op_types = {"Relu", "LeakyRelu", "Sigmoid", "Tanh"};
+  static std::vector<std::string> op_types = {"Relu", "LeakyRelu", "Sigmoid"};
 
   op_registrations.builders.push_back(std::make_unique<ActivationOpBuilder>());
   for (const auto& type : op_types) {

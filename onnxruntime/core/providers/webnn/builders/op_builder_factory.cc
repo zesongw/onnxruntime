@@ -23,11 +23,6 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
     CreateActivationOpBuilder("Relu", op_registrations);
     CreateActivationOpBuilder("LeakyRelu", op_registrations);
     CreateActivationOpBuilder("Sigmoid", op_registrations);
-    CreateActivationOpBuilder("Tanh", op_registrations);
-  }
-
-  {  // Batch Normalization
-    CreateBatchNormalizationOpBuilder("BatchNormalization", op_registrations);
   }
 
   {  // Clip
@@ -43,13 +38,8 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
     CreateConcatOpBuilder("Concat", op_registrations);
   }
 
-  {  // Gemm/MatMul
+  {  // Gemm
     CreateGemmOpBuilder("Gemm", op_registrations);
-    CreateGemmOpBuilder("MatMul", op_registrations);
-  }
-
-  {  // Gru
-    CreateGruOpBuilder("GRU", op_registrations);
   }
 
   {  // Pool
