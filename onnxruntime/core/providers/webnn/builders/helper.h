@@ -33,6 +33,9 @@ std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_v
                                                       const logging::Logger& logger);
 inline InlinedHashMap<std::string, std::string> op_map = {
     {"Add", "add"},
+    {"Sub", "sub"},
+    {"Mul", "mul"},
+    {"Div", "div"},
     {"Relu", "relu"},
     {"LeakyRelu", "leakyRelu"},
     {"Sigmoid", "sigmoid"},

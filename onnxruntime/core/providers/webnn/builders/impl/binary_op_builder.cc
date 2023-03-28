@@ -35,6 +35,12 @@ Status BinaryOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const
   emscripten::val output = emscripten::val::object();
   if (op_type == "Add") {
     output = model_builder.GetBuilder().call<emscripten::val>("add", input0, input1);
+  } else if (op_type == "Sub") {
+    output = model_builder.GetBuilder().call<emscripten::val>("sub", input0, input1);
+  } else if (op_type == "Mul") {
+    output = model_builder.GetBuilder().call<emscripten::val>("mul", input0, input1);
+  } else if (op_type == "Div") {
+    output = model_builder.GetBuilder().call<emscripten::val>("div", input0, input1);
   } else {
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                            "BinaryOpBuilder::AddToModelBuilderImpl, unknown op: ", op_type);
@@ -52,8 +58,21 @@ int BinaryOpBuilder::GetMinSupportedOpSet(const Node& /* node */) const {
 }
 
 void CreateBinaryOpBuilder(const std::string& op_type, OpBuilderRegistrations& op_registrations) {
+  if (op_registrations.op_builder_map.find(op_type) != op_registrations.op_builder_map.cend())
+    return;
+
+  static std::vector<std::string> op_types =
+      {
+          "Add",
+          "Sub",
+          "Mul",
+          "Div",
+      };
+
   op_registrations.builders.push_back(std::make_unique<BinaryOpBuilder>());
-  op_registrations.op_builder_map.emplace(op_type, op_registrations.builders.back().get());
+  for (const auto& type : op_types) {
+    op_registrations.op_builder_map.emplace(type, op_registrations.builders.back().get());
+  }
 }
 
 }  // namespace webnn

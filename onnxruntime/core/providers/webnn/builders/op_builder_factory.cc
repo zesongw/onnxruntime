@@ -15,8 +15,11 @@ namespace webnn {
 static OpBuilderRegistrations CreateOpBuilderRegistrations() {
   OpBuilderRegistrations op_registrations;
 
-  {  // Add
+  {  // Binary
     CreateBinaryOpBuilder("Add", op_registrations);
+    CreateBinaryOpBuilder("Sub", op_registrations);
+    CreateBinaryOpBuilder("Mul", op_registrations);
+    CreateBinaryOpBuilder("Div", op_registrations);
   }
 
   {  // Activations
