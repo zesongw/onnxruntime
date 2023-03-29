@@ -48,7 +48,11 @@ WebNNExecutionProvider::WebNNExecutionProvider(uint32_t webnn_device_flags, uint
     ORT_THROW("Failed to get ml from navigator.");
   }
   emscripten::val context_options = emscripten::val::object();
-  context_options.set("deviceType", emscripten::val(device_type_name_));
+  // Currently WebNN implementation in Chromium temporarily reuses the MLContextOptions
+  // defined in Model Loader API, which uses MLDevicePreference instead of MLDeviceType
+  // defined in WebNN. Because there's an ongoing spec discussion to simplify this API at
+  // https://github.com/webmachinelearning/webnn/issues/302.
+  context_options.set("devicePreference", emscripten::val(device_type_name_));
   context_options.set("powerPreference", emscripten::val(power_preference_name_));
   wnn_context_ = ml.call<emscripten::val>("createContextSync", context_options);
   if (!wnn_context_.as<bool>()) {
