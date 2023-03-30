@@ -985,34 +985,16 @@ if (onnxruntime_USE_WEBNN)
 
   add_compile_definitions(USE_WEBNN=1)
 
-  # These are shared utils,
-  # TODO, move this to a separated lib when used by EPs other than NNAPI and CoreML.
-  file(GLOB_RECURSE onnxruntime_providers_shared_utils_cc_srcs CONFIGURE_DEPENDS
-    "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.h"
-    "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.cc"
+  # These are webnn source file with shared utils
+  file(GLOB_RECURSE onnxruntime_providers_webnn_cc_srcs CONFIGURE_DEPENDS
+  "${ONNXRUNTIME_INCLUDE_DIR}/core/providers/webnn/*.h"
+  "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.h"
+  "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.cc"
+  "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.h"
+  "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.cc"
   )
 
-  file(GLOB
-    onnxruntime_providers_webnn_cc_srcs_top CONFIGURE_DEPENDS
-    "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.h"
-    "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.cc"
-  )
-
-  # Add builder source code.
-  file(GLOB_RECURSE
-    onnxruntime_providers_webnn_cc_srcs_nested CONFIGURE_DEPENDS
-    "${ONNXRUNTIME_ROOT}/core/providers/webnn/builders/*.h"
-    "${ONNXRUNTIME_ROOT}/core/providers/webnn/builders/*.cc"
-  )
-
-
-  set(onnxruntime_providers_webnn_cc_srcs
-    ${onnxruntime_providers_webnn_cc_srcs_top}
-    ${onnxruntime_providers_webnn_cc_srcs_nested}
-    ${onnxruntime_providers_shared_utils_cc_srcs}
-  )
-
-  source_group(TREE ${ONNXRUNTIME_ROOT}/core FILES ${onnxruntime_providers_webnn_cc_srcs})
+  source_group(TREE ${REPO_ROOT} FILES ${onnxruntime_providers_webnn_cc_srcs})
   onnxruntime_add_static_library(onnxruntime_providers_webnn ${onnxruntime_providers_webnn_cc_srcs})
   onnxruntime_add_include_to_target(onnxruntime_providers_webnn onnxruntime_common onnx onnx_proto Boost::mp11)
 

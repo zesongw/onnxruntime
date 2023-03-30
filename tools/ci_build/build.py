@@ -1198,6 +1198,8 @@ def generate_build_tree(
         cmake_args += ["-Donnxruntime_USE_COREML=ON"]
 
     if args.use_webnn:
+        if not args.build_wasm:
+            raise BuildError("WebNN is only available for WASM build.")
         cmake_args += ["-Donnxruntime_USE_WEBNN=ON"]
 
     if args.use_snpe:
