@@ -12,7 +12,6 @@
 #include "core/graph/onnx_protobuf.h"
 #include "core/providers/common.h"
 #include "core/providers/webnn/builders/helper.h"
-#include "core/providers/webnn/webnn_provider_factory.h"
 #include "model.h"
 
 namespace onnxruntime {

@@ -985,13 +985,11 @@ if (onnxruntime_USE_WEBNN)
 
   add_compile_definitions(USE_WEBNN=1)
 
-  # These are webnn source file with shared utils
   file(GLOB_RECURSE onnxruntime_providers_webnn_cc_srcs CONFIGURE_DEPENDS
-  "${ONNXRUNTIME_INCLUDE_DIR}/core/providers/webnn/*.h"
-  "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.h"
-  "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.cc"
-  "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.h"
-  "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.cc"
+    "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.h"
+    "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.cc"
+    "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.h"
+    "${ONNXRUNTIME_ROOT}/core/providers/shared/utils/utils.cc"
   )
 
   source_group(TREE ${REPO_ROOT} FILES ${onnxruntime_providers_webnn_cc_srcs})
@@ -999,9 +997,7 @@ if (onnxruntime_USE_WEBNN)
   onnxruntime_add_include_to_target(onnxruntime_providers_webnn onnxruntime_common onnx onnx_proto Boost::mp11)
 
   add_dependencies(onnxruntime_providers_webnn onnx ${onnxruntime_EXTERNAL_DEPENDENCIES})
-  set_target_properties(onnxruntime_providers_webnn PROPERTIES CXX_STANDARD_REQUIRED ON)
   set_target_properties(onnxruntime_providers_webnn PROPERTIES FOLDER "ONNXRuntime")
-  target_include_directories(onnxruntime_providers_webnn PRIVATE ${ONNXRUNTIME_ROOT})
   set_target_properties(onnxruntime_providers_webnn PROPERTIES LINKER_LANGUAGE CXX)
 endif()
 

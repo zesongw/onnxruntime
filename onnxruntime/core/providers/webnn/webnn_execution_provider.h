@@ -6,7 +6,6 @@
 
 #include "core/common/inlined_containers.h"
 #include "core/framework/execution_provider.h"
-#include "core/providers/webnn/webnn_provider_factory.h"
 
 #include <emscripten.h>
 #include <emscripten/val.h>

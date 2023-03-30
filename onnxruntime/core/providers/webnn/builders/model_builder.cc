@@ -13,7 +13,6 @@
 #include "core/framework/tensorprotoutils.h"
 #include "core/providers/common.h"
 #include "core/providers/shared/utils/utils.h"
-#include "core/providers/webnn/webnn_provider_factory.h"
 
 namespace onnxruntime {
 namespace webnn {

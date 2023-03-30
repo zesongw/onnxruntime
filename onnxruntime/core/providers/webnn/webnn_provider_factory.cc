@@ -2,7 +2,6 @@
 // Copyright (c) Intel Corporation. All rights reserved.
 // Licensed under the MIT License.
 
-#include "core/providers/webnn/webnn_provider_factory.h"
 #include "core/providers/webnn/webnn_provider_factory_creator.h"
 #include "core/session/abi_session_options_impl.h"
 #include "webnn_execution_provider.h"
@@ -16,9 +15,7 @@ struct WebNNProviderFactory : IExecutionProviderFactory {
   ~WebNNProviderFactory() override {}
 
   std::unique_ptr<IExecutionProvider> CreateProvider() override;
-  // The bit flags which define bool options for WEBNN EP, bits are defined as
-  // WebNNDeviceFlags and WebNNPowerFlags in
-  // include/onnxruntime/core/providers/webnn/webnn_provider_factory.h.
+
   uint32_t webnn_device_flags_;
   uint32_t webnn_power_flags_;
 };
