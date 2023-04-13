@@ -10,6 +10,7 @@
 #include "core/framework/kernel_registry.h"
 #include "core/graph/graph_viewer.h"
 #include "core/session/onnxruntime_cxx_api.h"
+#include "core/common/safeint.h"
 
 #include "builders/model.h"
 #include "builders/helper.h"
@@ -273,7 +274,8 @@ common::Status WebNNExecutionProvider::Compile(const std::vector<FusedNodeAndGra
         if (shape.empty())
           shape.push_back(1);
         std::vector<int> temp(shape.size());
-        transform(shape.begin(), shape.end(), temp.begin(), [](int64_t dim) -> int32_t { return int(dim); });
+        transform(shape.begin(), shape.end(), temp.begin(),
+                  [](int64_t dim) -> uint32_t { return SafeInt<int32_t>(dim); });
         const void* inputBuffer = const_cast<void*>(input_tensor.GetTensorRawData());
         inputs.emplace(
             input_name,

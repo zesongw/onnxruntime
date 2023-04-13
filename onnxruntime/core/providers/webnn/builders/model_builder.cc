@@ -262,7 +262,7 @@ Status ModelBuilder::RegisterModelOutputs() {
 Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   ORT_RETURN_IF_ERROR(Initialize());
   emscripten::val named_operands = emscripten::val::object();
-  for (auto name : output_names_) {
+  for (auto& name : output_names_) {
     named_operands.set(name, wnn_operands_.at(name));
   }
   emscripten::val wnn_graph = wnn_builder_.call<emscripten::val>("buildSync", named_operands);

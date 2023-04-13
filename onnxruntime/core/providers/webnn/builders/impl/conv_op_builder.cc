@@ -89,6 +89,7 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
   return Status::OK();
 }
 
+// Both depthwise Conv and ConvTranspose share the same logic to add the layout.
 Status AddInitializerInNewLayout(ModelBuilder& model_builder,
                                  const std::string& name,
                                  bool is_conv) {
@@ -171,7 +172,7 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   NodeAttrHelper helper(node);
   const auto strides = helper.Get("strides", std::vector<int32_t>{1, 1});
   const auto dilations = helper.Get("dilations", std::vector<int32_t>{1, 1});
-  const auto pads = helper.Get("pads", std::vector<int32_t>{0, 0, 0, 0});
+  auto pads = helper.Get("pads", std::vector<int32_t>{0, 0, 0, 0});
   const auto& weight = input_defs[1]->Name();
 
   if (op_type == "Conv") {
@@ -193,15 +194,41 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
   } else {
     emscripten::val options = emscripten::val::object();
     ORT_RETURN_IF_ERROR(SetConvBaseOptions(model_builder, node, options, strides, dilations, pads, logger));
-    options.set("filterLayout", emscripten::val("iohw"));
+    ORT_RETURN_IF_ERROR(AddInitializerInNewLayout(
+        model_builder, weight, false));
+    options.set("filterLayout", emscripten::val("ohwi"));
     // When the 'output_shape' is specificed, the 'output_padding' values
     // in options.outputPadding are ignored.
-    std::vector<int32_t> output_shape;
-    std::vector<int32_t> output_padding;
+    std::vector<int32_t> dim;
+    std::vector<int32_t> output_padding{0, 0};
     if (helper.HasAttr("output_shape")) {
       // Default value of 'output_shape' will be ignore as we already check if
       // it's existed.
-      output_shape = helper.Get("output_shape", std::vector<int32_t>{-1, -1});
+      dim = helper.Get("output_shape", std::vector<int32_t>{-1, -1});
+      // Extract the height and width.
+      std::vector<int32_t> output_shape;
+      if (dim.size() == 2) {
+        output_shape = dim;
+      } else if (dim.size() == 4) {
+        output_shape = {dim[2], dim[3]};
+      } else {
+        return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT, "Invalid output shape");
+      }
+      // Padding values are auto generated.
+      if (helper.HasAttr("kernel_shape")) {
+        std::vector<int32_t> kernel_shape = helper.Get("kernel_shape", std::vector<int32_t>{-1, -1});
+        std::vector<int32_t> total_padding(2);
+        std::vector<int64_t> input_shape;
+        ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
+        for (size_t i = 0; i < 2; i++) {
+          total_padding[i] = strides[i] * (input_shape[i + 1] - 1) + output_padding[i] + ((kernel_shape[i] - 1) * dilations[i] + 1) - output_shape[i];
+        }
+        pads[0] = total_padding[0] - (total_padding[0] / 2);
+        pads[1] = total_padding[0] / 2;
+        pads[2] = total_padding[1] - (total_padding[1] / 2);
+        pads[3] = total_padding[1] / 2;
+        options.set("padding", emscripten::val::array(pads));
+      }
       options.set("outputSizes", emscripten::val::array(output_shape));
     } else {
       output_padding = helper.Get("output_padding", std::vector<int32_t>{0, 0});

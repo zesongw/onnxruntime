@@ -3503,7 +3503,6 @@ struct OrtApi {
    *   QNN
    *   SNPE
    *   XNNPACK
-   *   WEBNN
    *
    * Note: If an execution provider has a dedicated SessionOptionsAppendExecutionProvider_<provider name> function
    *       that should be used to add it.
@@ -3530,9 +3529,6 @@ struct OrtApi {
    * XNNPACK supported keys:
    *   "intra_op_num_threads": number of thread-pool size to use for XNNPACK execution provider.
    *      default value is 0, which means to use the session thread-pool size.
-   * WEBNN supported keys:
-   *   "deviceType": webnn execute hardware, options: "auto", "cpu", "gpu".
-   *   "powerPreference": power option for webnn backend, options: "auto", "low-power", "high-performance".
    *
    * \since Version 1.12.
    */
