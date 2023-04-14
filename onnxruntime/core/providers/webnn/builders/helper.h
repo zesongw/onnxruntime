@@ -31,7 +31,7 @@ bool IsInputSupported(const NodeArg& node_arg, const std::string& parent_name, c
 std::vector<std::vector<NodeIndex>> GetSupportedNodes(const GraphViewer& graph_viewer,
                                                       const emscripten::val& wnn_builder_,
                                                       const logging::Logger& logger);
-inline InlinedHashMap<std::string, std::string> op_map = {
+static const InlinedHashMap<std::string, std::string> op_map = {
     {"Add", "add"},
     {"Sub", "sub"},
     {"Mul", "mul"},
@@ -53,7 +53,7 @@ inline InlinedHashMap<std::string, std::string> op_map = {
     {"Transpose", "transpose"}};
 
 inline bool CheckSingleOp(const std::string& op_type, const emscripten::val& wnn_builder_) {
-  return op_map.find(op_type) != op_map.end() && wnn_builder_[op_map[op_type]].as<bool>();
+  return op_map.find(op_type) != op_map.end() && wnn_builder_[op_map.find(op_type)->second].as<bool>();
 }
 
 }  // namespace webnn
