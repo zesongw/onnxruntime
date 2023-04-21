@@ -45,7 +45,7 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
 #endif
   }
 
-#ifdef WEBASSEMBLY_THREADS
+#ifdef ENABLE_WEBASSEMBLY_THREADS
   InlinedHashMap<std::string, emscripten::val> val_vec;
 #endif
   for (const auto& output : outputs) {
@@ -68,7 +68,7 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
 
   wnn_context_.call<emscripten::val>("computeSync", wnn_graph_, wnn_inputs_, wnn_outputs_);
   // Set the JS buffer back to the output tensor.
-#ifdef WEBASSEMBLY_THREADS
+#ifdef ENABLE_WEBASSEMBLY_THREADS
   for (const auto& output : outputs) {
     const std::string& name = output.first;
     emscripten::val view = val_vec.at(name);
