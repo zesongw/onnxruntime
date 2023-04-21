@@ -117,10 +117,10 @@ Status ModelBuilder::RegisterInitializers() {
                                                          reinterpret_cast<float*>(unpacked_tensor.data()))};
       // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
       // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
-#ifndef WEBASSEMBLY_THREADS
-      operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
-#else
+#ifdef ENABLE_WEBASSEMBLY_THREADS
       operand = wnn_builder_.call<emscripten::val>("constant", desc, view.call<emscripten::val>("slice"));
+#else
+      operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
 #endif
 
     } else {
@@ -255,10 +255,10 @@ Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
   // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
   // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
   emscripten::val operand = emscripten::val::object();
-#ifndef WEBASSEMBLY_THREADS
-  operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
-#else
+#ifdef ENABLE_WEBASSEMBLY_THREADS
   operand = wnn_builder_.call<emscripten::val>("constant", desc, view.call<emscripten::val>("slice"));
+#else
+  operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
 #endif
   AddOperand(name, operand);
   mem_persist_buffers_.push_back(std::move(persist_buffer));

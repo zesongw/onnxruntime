@@ -985,7 +985,7 @@ if (onnxruntime_USE_WEBNN)
 
   add_compile_definitions(USE_WEBNN=1)
   if (onnxruntime_ENABLE_WEBASSEMBLY_THREADS)
-    add_definitions(-DWEBASSEMBLY_THREADS=1)
+    add_definitions(-DENABLE_WEBASSEMBLY_THREADS=1)
   endif()
   file(GLOB_RECURSE onnxruntime_providers_webnn_cc_srcs CONFIGURE_DEPENDS
     "${ONNXRUNTIME_ROOT}/core/providers/webnn/*.h"

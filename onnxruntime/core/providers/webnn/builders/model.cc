@@ -38,10 +38,10 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
     // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
     // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
-#ifndef WEBASSEMBLY_THREADS
-    wnn_inputs_.set(name, view);
-#else
+#ifdef ENABLE_WEBASSEMBLY_THREADS
     wnn_inputs_.set(name, view.call<emscripten::val>("slice"));
+#else
+    wnn_inputs_.set(name, view);
 #endif
   }
 
@@ -58,11 +58,11 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
-#ifndef WEBASSEMBLY_THREADS
-    wnn_outputs_.set(name, view);
-#else
+#ifdef ENABLE_WEBASSEMBLY_THREADS
     val_vec.insert({name, view});
     wnn_outputs_.set(name, view.call<emscripten::val>("slice"));
+#else
+    wnn_outputs_.set(name, view);
 #endif
   }
 
