@@ -36,13 +36,14 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
-    // WebNN API only accepts non-shared ArrayBufferView.
+    // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
     // https://webmachinelearning.github.io/webnn/#typedefdef-mlnamedarraybufferviews
     emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
     if (SharedArrayBuffer.as<bool>()) {
-      emscripten::val non_shared_array = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
-      non_shared_array.call<void>("set", view);
-      wnn_inputs_.set(name, non_shared_array);
+      emscripten::val non_shared_data =
+          emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
+      non_shared_data.call<void>("set", view);
+      wnn_inputs_.set(name, non_shared_data);
     } else {
       wnn_inputs_.set(name, view);
     }
@@ -61,9 +62,9 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
     val_vec.insert({name, view});
-    emscripten::val non_shared_array = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
+    emscripten::val non_shared_data = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
     if (SharedArrayBuffer.as<bool>()) {
-      wnn_outputs_.set(name, non_shared_array);
+      wnn_outputs_.set(name, non_shared_data);
     } else {
       wnn_outputs_.set(name, view);
     }

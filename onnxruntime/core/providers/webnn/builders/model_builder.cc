@@ -115,13 +115,14 @@ Status ModelBuilder::RegisterInitializers() {
       desc.set("type", emscripten::val("float32"));
       emscripten::val view{emscripten::typed_memory_view(num_elements,
                                                          reinterpret_cast<float*>(unpacked_tensor.data()))};
-      // WebNN API only accepts non-shared ArrayBufferView.
+      // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
       // https://webmachinelearning.github.io/webnn/#typedefdef-mlnamedarraybufferviews
       emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
       if (SharedArrayBuffer.as<bool>()) {
-        emscripten::val non_shared_array = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
-        non_shared_array.call<void>("set", view);
-        operand = wnn_builder_.call<emscripten::val>("constant", desc, non_shared_array);
+        emscripten::val non_shared_data =
+            emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
+        non_shared_data.call<void>("set", view);
+        operand = wnn_builder_.call<emscripten::val>("constant", desc, non_shared_data);
       } else {
         operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
       }
@@ -255,14 +256,14 @@ Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
   emscripten::val desc = emscripten::val::object();
   desc.set("dimensions", emscripten::val::array(shape));
   desc.set("type", emscripten::val("float32"));
-  // WebNN API only accepts non-shared ArrayBufferView.
+  // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
   // https://webmachinelearning.github.io/webnn/#typedefdef-mlnamedarraybufferviews
   emscripten::val operand = emscripten::val::object();
   emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
   if (SharedArrayBuffer.as<bool>()) {
-    emscripten::val non_shared_array = emscripten::val::global("Float32Array").new_(size / element_size);
-    non_shared_array.call<void>("set", view);
-    operand = wnn_builder_.call<emscripten::val>("constant", desc, non_shared_array);
+    emscripten::val non_shared_data = emscripten::val::global("Float32Array").new_(size / element_size);
+    non_shared_data.call<void>("set", view);
+    operand = wnn_builder_.call<emscripten::val>("constant", desc, non_shared_data);
   } else {
     operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
   }
