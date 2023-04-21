@@ -37,20 +37,17 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
     // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
-    // https://webmachinelearning.github.io/webnn/#typedefdef-mlnamedarraybufferviews
-    emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
-    if (SharedArrayBuffer.as<bool>()) {
-      emscripten::val non_shared_data =
-          emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
-      non_shared_data.call<void>("set", view);
-      wnn_inputs_.set(name, non_shared_data);
-    } else {
-      wnn_inputs_.set(name, view);
-    }
+    // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
+#ifndef WEBASSEMBLY_THREADS
+    wnn_inputs_.set(name, view);
+#else
+    wnn_inputs_.set(name, view.call<emscripten::val>("slice"));
+#endif
   }
 
-  emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
+#ifdef WEBASSEMBLY_THREADS
   InlinedHashMap<std::string, emscripten::val> val_vec;
+#endif
   for (const auto& output : outputs) {
     const std::string& name = output.first;
     const struct OnnxTensorData tensor = output.second;
@@ -61,24 +58,23 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
+#ifndef WEBASSEMBLY_THREADS
+    wnn_outputs_.set(name, view);
+#else
     val_vec.insert({name, view});
-    emscripten::val non_shared_data = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
-    if (SharedArrayBuffer.as<bool>()) {
-      wnn_outputs_.set(name, non_shared_data);
-    } else {
-      wnn_outputs_.set(name, view);
-    }
+    wnn_outputs_.set(name, view.call<emscripten::val>("slice"));
+#endif
   }
 
-  // Set the JS buffer back to the output tensor.
   wnn_context_.call<emscripten::val>("computeSync", wnn_graph_, wnn_inputs_, wnn_outputs_);
-  if (SharedArrayBuffer.as<bool>()) {
-    for (const auto& output : outputs) {
-      const std::string& name = output.first;
-      emscripten::val view = val_vec.at(name);
-      view.call<void>("set", wnn_outputs_[name]);
-    }
+  // Set the JS buffer back to the output tensor.
+#ifdef WEBASSEMBLY_THREADS
+  for (const auto& output : outputs) {
+    const std::string& name = output.first;
+    emscripten::val view = val_vec.at(name);
+    view.call<void>("set", wnn_outputs_[name]);
   }
+#endif
   return Status::OK();
 }
 
