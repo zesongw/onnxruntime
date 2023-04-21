@@ -36,8 +36,20 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
-    wnn_inputs_.set(name, view);
+    // WebNN API only accepts non-shared ArrayBufferView.
+    // https://webmachinelearning.github.io/webnn/#typedefdef-mlnamedarraybufferviews
+    emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
+    if (SharedArrayBuffer.as<bool>()) {
+      emscripten::val non_shared_array = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
+      non_shared_array.call<void>("set", view);
+      wnn_inputs_.set(name, non_shared_array);
+    } else {
+      wnn_inputs_.set(name, view);
+    }
   }
+
+  emscripten::val SharedArrayBuffer = emscripten::val::global("SharedArrayBuffer");
+  InlinedHashMap<std::string, emscripten::val> val_vec;
   for (const auto& output : outputs) {
     const std::string& name = output.first;
     const struct OnnxTensorData tensor = output.second;
@@ -48,11 +60,24 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     }
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
-    wnn_outputs_.set(name, view);
+    val_vec.insert({name, view});
+    emscripten::val non_shared_array = emscripten::val::global("Float32Array").new_(static_cast<uint32_t>(num_elements));
+    if (SharedArrayBuffer.as<bool>()) {
+      wnn_outputs_.set(name, non_shared_array);
+    } else {
+      wnn_outputs_.set(name, view);
+    }
   }
 
+  // Set the JS buffer back to the output tensor.
   wnn_context_.call<emscripten::val>("computeSync", wnn_graph_, wnn_inputs_, wnn_outputs_);
-
+  if (SharedArrayBuffer.as<bool>()) {
+    for (const auto& output : outputs) {
+      const std::string& name = output.first;
+      emscripten::val view = val_vec.at(name);
+      view.call<void>("set", wnn_outputs_[name]);
+    }
+  }
   return Status::OK();
 }
 
