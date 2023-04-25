@@ -86,6 +86,8 @@ class Model {
   void SetScalarOutputs(InlinedHashSet<std::string>&& scalar_outputs) {
     scalar_outputs_ = std::move(scalar_outputs);
   }
+
+  void SetWnnInputOutput();
 };
 
 }  // namespace webnn

@@ -115,9 +115,9 @@ Status ModelBuilder::RegisterInitializers() {
       desc.set("type", emscripten::val("float32"));
       emscripten::val view{emscripten::typed_memory_view(num_elements,
                                                          reinterpret_cast<float*>(unpacked_tensor.data()))};
+#ifdef ENABLE_WEBASSEMBLY_THREADS
       // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
       // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
-#ifdef ENABLE_WEBASSEMBLY_THREADS
       operand = wnn_builder_.call<emscripten::val>("constant", desc, view.call<emscripten::val>("slice"));
 #else
       operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
@@ -252,10 +252,10 @@ Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
   emscripten::val desc = emscripten::val::object();
   desc.set("dimensions", emscripten::val::array(shape));
   desc.set("type", emscripten::val("float32"));
-  // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
-  // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
   emscripten::val operand = emscripten::val::object();
 #ifdef ENABLE_WEBASSEMBLY_THREADS
+  // Workaround for WebAssembly multi-threads enabled since WebNN API only accepts non-shared ArrayBufferView.
+  // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
   operand = wnn_builder_.call<emscripten::val>("constant", desc, view.call<emscripten::val>("slice"));
 #else
   operand = wnn_builder_.call<emscripten::val>("constant", desc, view);
@@ -288,6 +288,15 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
   model->SetOutputs(std::move(output_names_));
   model->SetScalarOutputs(std::move(scalar_outputs_));
   model->SetInputOutputInfo(std::move(input_output_info_));
+#ifdef ENABLE_WEBASSEMBLY_THREADS
+  // Pre-allocate the input and output tensors for the WebNN graph
+  // when WebAssembly multi-threads is enabled since WebNN API only
+  // accepts non-shared ArrayBufferView,
+  // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
+  // at this time the 'view' defined by Emscripten is shared ArrayBufferView.
+  // They will not share the same ArrayBuffer.
+  model->SetWnnInputOutput();
+#endif
   return Status::OK();
 }
 
