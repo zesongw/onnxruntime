@@ -87,7 +87,7 @@ class Model {
     scalar_outputs_ = std::move(scalar_outputs);
   }
 
-  void SetWnnInputOutput();
+  void AllocateInputOutputBuffers();
 };
 
 }  // namespace webnn

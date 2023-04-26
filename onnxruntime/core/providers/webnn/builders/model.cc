@@ -37,6 +37,7 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
 #ifdef ENABLE_WEBASSEMBLY_THREADS
+    // Copy the inputs from Wasm SharedArrayBuffer to the pre-allocated ArrayBuffers.
     wnn_inputs_[name].call<void>("set", view);
 #else
     wnn_inputs_.set(name, view);
@@ -48,8 +49,8 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
   // multi-threads is enabled, since WebNN API only accepts non-shared ArrayBufferView,
   // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
   // and at this time the 'view' defined by Emscripten is shared ArrayBufferView, the memory
-  // address is different from the non-shard one, additional memory copy is requred here.
-  InlinedHashMap<std::string, emscripten::val> val_vec;
+  // address is different from the non-shared one, additional memory copy is required here.
+  InlinedHashMap<std::string, emscripten::val> output_views;
 #endif
   for (const auto& output : outputs) {
     const std::string& name = output.first;
@@ -62,7 +63,7 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
     auto num_elements = SafeInt<size_t>(Product(tensor.tensor_info.shape));
     emscripten::val view{emscripten::typed_memory_view(num_elements, static_cast<const float*>(tensor.buffer))};
 #ifdef ENABLE_WEBASSEMBLY_THREADS
-    val_vec.insert({name, view});
+    output_views.insert({name, view});
 #else
     wnn_outputs_.set(name, view);
 #endif
@@ -70,10 +71,10 @@ Status Model::Predict(const InlinedHashMap<std::string, OnnxTensorData>& inputs,
   wnn_context_.call<emscripten::val>("computeSync", wnn_graph_, wnn_inputs_, wnn_outputs_);
 
 #ifdef ENABLE_WEBASSEMBLY_THREADS
-  // Set the JS buffer back to the output tensor.
+  // Copy the outputs from pre-allocated ArrayBuffers back to the Wasm SharedArrayBuffer.
   for (const auto& output : outputs) {
     const std::string& name = output.first;
-    emscripten::val view = val_vec.at(name);
+    emscripten::val view = output_views.at(name);
     view.call<void>("set", wnn_outputs_[name]);
   }
 #endif
@@ -96,8 +97,8 @@ void Model::SetOutputMap(InlinedHashMap<std::string, size_t>&& output_map) {
   output_map_ = std::move(output_map);
 }
 
-// Pre-allocate the input and output tensors for the WebNN graph.
-void Model::SetWnnInputOutput() {
+// Pre-allocate the input and output buffers for the WebNN graph.
+void Model::AllocateInputOutputBuffers() {
   for (const auto& input : inputs_) {
     const auto& input_info = input_output_info_.at(input);
     const auto input_shape = input_info.shape;

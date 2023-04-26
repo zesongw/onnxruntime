@@ -291,11 +291,9 @@ Status ModelBuilder::Compile(std::unique_ptr<Model>& model) {
 #ifdef ENABLE_WEBASSEMBLY_THREADS
   // Pre-allocate the input and output tensors for the WebNN graph
   // when WebAssembly multi-threads is enabled since WebNN API only
-  // accepts non-shared ArrayBufferView,
+  // accepts non-shared ArrayBufferView.
   // https://www.w3.org/TR/webnn/#typedefdef-mlnamedarraybufferviews
-  // at this time the 'view' defined by Emscripten is shared ArrayBufferView.
-  // They will not share the same ArrayBuffer.
-  model->SetWnnInputOutput();
+  model->AllocateInputOutputBuffers();
 #endif
   return Status::OK();
 }
