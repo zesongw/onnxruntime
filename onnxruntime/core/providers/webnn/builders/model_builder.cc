@@ -18,11 +18,13 @@ namespace onnxruntime {
 namespace webnn {
 
 ModelBuilder::ModelBuilder(const GraphViewer& graph_viewer, const logging::Logger& logger,
-                           const emscripten::val& context, const emscripten::val& builder)
+                           const emscripten::val& context, const emscripten::val& builder,
+                           const DataLayout preferred_layout)
     : graph_viewer_(graph_viewer),
       logger_(logger),
       wnn_context_(context),
-      wnn_builder_(builder) {}
+      wnn_builder_(builder),
+      preferred_layout_(preferred_layout) {}
 
 Status ModelBuilder::Initialize() {
   PreprocessInitializers();
@@ -118,12 +120,12 @@ Status ModelBuilder::RegisterInitializers() {
         case ONNX_NAMESPACE::TensorProto_DataType_FLOAT16:
           desc.set("type", emscripten::val("float16"));
           view = emscripten::val{emscripten::typed_memory_view(num_elements,
-                                                             reinterpret_cast<uint16_t*>(unpacked_tensor.data()))};
+                                                               reinterpret_cast<uint16_t*>(unpacked_tensor.data()))};
           break;
         case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
           desc.set("type", emscripten::val("float32"));
           view = emscripten::val{emscripten::typed_memory_view(num_elements,
-                                                             reinterpret_cast<float*>(unpacked_tensor.data()))};
+                                                               reinterpret_cast<float*>(unpacked_tensor.data()))};
           break;
         default:
           break;
@@ -289,8 +291,6 @@ Status ModelBuilder::AddOperandFromPersistMemoryBuffer(
 #endif
   AddOperand(name, operand);
   mem_persist_buffers_.push_back(std::move(persist_buffer));
-  emscripten::val console = emscripten::val::global("console");
-  console.call<void>("log", operand);
   return Status::OK();
 }
 

@@ -33,8 +33,10 @@ class ConvOpBuilder : public BaseOpBuilder {
 
 void ConvOpBuilder::AddInitializersToSkip(ModelBuilder& model_builder, const Node& node) const {
   // skip the weight for conv as we need to transpose.
-  model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());  // W
-  model_builder.AddInputToSkip(node.InputDefs()[1]->Name());
+  if (model_builder.GetPreferredLayout() == DataLayout::NHWC) {
+    model_builder.AddInitializerToSkip(node.InputDefs()[1]->Name());  // W
+    model_builder.AddInputToSkip(node.InputDefs()[1]->Name());
+  }
 }
 
 // Helper functions
@@ -52,7 +54,6 @@ common::Status SetConvBaseOptions(ModelBuilder& model_builder,
 
   options.set("strides", emscripten::val::array(strides));
   options.set("dilations", emscripten::val::array(dilations));
-  options.set("inputLayout", emscripten::val("nhwc"));
   options.set("groups", group);
   // Add Padding.
   // Usually using autopadding is more efficient than using explicit padding.
@@ -124,16 +125,15 @@ Status AddInitializerInNewLayout(ModelBuilder& model_builder,
   SafeInt<size_t> num_elements = SafeInt<size_t>(Product(dest_shape));
 
   size_t element_size{0};
-  switch (data_type)
-  {
-  case ONNX_NAMESPACE::TensorProto_DataType_FLOAT16:
-    element_size = sizeof(uint16_t);
-    break;
-  case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
-    element_size = sizeof(float);
-    break;
-  default:
-    break;
+  switch (data_type) {
+    case ONNX_NAMESPACE::TensorProto_DataType_FLOAT16:
+      element_size = sizeof(uint16_t);
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
+      element_size = sizeof(float);
+      break;
+    default:
+      break;
   }
   std::unique_ptr<uint8_t[]> buffer_holder(new uint8_t[element_size * num_elements]);
   uint8_t* buffer = buffer_holder.get();
@@ -193,22 +193,30 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
     int groups = options["groups"].as<int>();
     std::vector<int64_t> input_shape;
     ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
-    bool depthwise = (groups == input_shape[3] && groups != 1);
-    ORT_RETURN_IF_ERROR(AddInitializerInNewLayout(
-        model_builder, weight, !depthwise));
-    if (!depthwise) {
-      options.set("filterLayout", emscripten::val("ohwi"));
-    } else {
-      options.set("filterLayout", emscripten::val("ihwo"));
+    if (model_builder.GetPreferredLayout() == DataLayout::NHWC) {
+      bool depthwise = (groups == input_shape[3] && groups != 1);
+      options.set("inputLayout", emscripten::val("nhwc"));
+      ORT_RETURN_IF_ERROR(AddInitializerInNewLayout(
+          model_builder, weight, !depthwise));
+      if (!depthwise) {
+        options.set("filterLayout", emscripten::val("ohwi"));
+      } else {
+        options.set("filterLayout", emscripten::val("ihwo"));
+      }
     }
+
     emscripten::val filter = model_builder.GetOperand(input_defs[1]->Name());
     output = model_builder.GetBuilder().call<emscripten::val>("conv2d", input, filter, options);
   } else {
     emscripten::val options = emscripten::val::object();
     ORT_RETURN_IF_ERROR(SetConvBaseOptions(model_builder, node, options, strides, dilations, pads, logger));
-    ORT_RETURN_IF_ERROR(AddInitializerInNewLayout(
-        model_builder, weight, false));
-    options.set("filterLayout", emscripten::val("ohwi"));
+    if (model_builder.GetPreferredLayout() == DataLayout::NHWC) {
+      options.set("inputLayout", emscripten::val("nhwc"));
+      options.set("filterLayout", emscripten::val("ohwi"));
+      ORT_RETURN_IF_ERROR(AddInitializerInNewLayout(
+          model_builder, weight, false));
+    }
+
     // When the 'output_shape' is specificed, the 'output_padding' values
     // in options.outputPadding are ignored.
     std::vector<int32_t> dim;
@@ -233,7 +241,8 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
         std::vector<int64_t> input_shape;
         ORT_RETURN_IF_NOT(GetShape(*input_defs[0], input_shape, logger), "Cannot get shape");
         for (size_t i = 0; i < 2; i++) {
-          total_padding[i] = strides[i] * (input_shape[i + 1] - 1) + output_padding[i] + ((kernel_shape[i] - 1) * dilations[i] + 1) - output_shape[i];
+          total_padding[i] = strides[i] * (input_shape[i + 1] - 1) +
+                             output_padding[i] + ((kernel_shape[i] - 1) * dilations[i] + 1) - output_shape[i];
         }
         pads[0] = total_padding[0] - (total_padding[0] / 2);
         pads[1] = total_padding[0] / 2;
@@ -247,7 +256,6 @@ Status ConvOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder, const N
       options.set("outputPadding", emscripten::val::array(output_padding));
     }
     emscripten::val filter = model_builder.GetOperand(input_defs[1]->Name());
-
     output = model_builder.GetBuilder().call<emscripten::val>("convTranspose2d", input, filter, options);
   }
 
