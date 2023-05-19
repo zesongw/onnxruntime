@@ -33,21 +33,18 @@ Status FlattenOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
     return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
                            "FlattenOpBuilder::AddToModelBuilderImpl, cannot get input shape");
   }
-  auto rank = input_shape.size();
+  int64_t rank = input_shape.size();
   NodeAttrHelper helper(node);
-  auto raw_axis = helper.Get("axis", 1);
-  if (raw_axis < 0) {
-    raw_axis = HandleNegativeAxis(raw_axis, rank);
+  int64_t axis = helper.Get("axis", 1);
+  ORT_ENFORCE(axis >= -rank && axis <= rank, "axis ", axis,
+              " is not in valid range [-", rank, ",", rank, "]");
+  if (axis < 0) {
+    axis += rank;
   }
   emscripten::val inputs = model_builder.GetOperand(input_defs[0]->Name());
-  emscripten::val output = emscripten::val::object();
-  // When axis = 0, the shape of the output tensor is (1, (d_0 X d_1 … d_n)
-  if (raw_axis == 0) {
-    auto shape = std::vector<int32_t>{1, SafeInt<size_t>(Product(input_shape))};
-    output = model_builder.GetBuilder().call<emscripten::val>("reshape", inputs, emscripten::val::array(shape));
-  } else {
-    output = model_builder.GetBuilder().call<emscripten::val>("flattenTo2d", inputs, raw_axis);
-  }
+  emscripten::val output = model_builder.GetBuilder().call<emscripten::val>("flattenTo2d", inputs,
+                                                                            static_cast<int32_t>(axis));
+
   model_builder.AddOperand(node.OutputDefs()[0]->Name(), std::move(output));
   return Status::OK();
 }
