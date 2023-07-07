@@ -101,6 +101,10 @@ static OpBuilderRegistrations CreateOpBuilderRegistrations() {
     CreatePoolOpBuilder("MaxPool", op_registrations);
   }
 
+  {  // Range
+    CreateRangeOpBuilder("Range", op_registrations);
+  }
+
   {  // Reduction
     CreateReductionOpBuilder("ReduceMax", op_registrations);
     CreateReductionOpBuilder("ReduceMean", op_registrations);

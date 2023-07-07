@@ -39,34 +39,7 @@ Status CastOpBuilder::AddToModelBuilderImpl(ModelBuilder& model_builder,
   // We already checked the "to" type in IsOpSupportedImpl.
   const auto to_type = helper.Get("to", ONNX_NAMESPACE::TensorProto_DataType_FLOAT);
   std::string operand_type;
-  switch (to_type) {
-    case ONNX_NAMESPACE::TensorProto_DataType_BOOL:
-      operand_type = "uint8";
-      break;
-    case ONNX_NAMESPACE::TensorProto_DataType_FLOAT16:
-      operand_type = "float16";
-      break;
-    case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
-      operand_type = "float32";
-      break;
-    case ONNX_NAMESPACE::TensorProto_DataType_INT32:
-      operand_type = "int32";
-      break;
-    case ONNX_NAMESPACE::TensorProto_DataType_INT64:
-      operand_type = "int64";
-      break;
-    case ONNX_NAMESPACE::TensorProto_DataType_UINT32:
-      operand_type = "uint32";
-      break;
-    case ONNX_NAMESPACE::TensorProto_DataType_UINT64:
-      operand_type = "uint64";
-      break;
-    default:
-      return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
-                             "The Cast node has unsupported 'to' type, name: ",
-                             node.Name(), " type: ", to_type);
-  }
-
+  ORT_RETURN_IF_ERROR(GetWebNNType(to_type, operand_type));
   emscripten::val output =
       model_builder.GetBuilder().call<emscripten::val>("cast", input, emscripten::val(operand_type));
 

@@ -131,6 +131,7 @@ static const InlinedHashMap<std::string, std::string> op_map = {
     {"AveragePool", "averagePool2d"},
     {"LayerNormalization", "meanVarianceNormalization"},
     {"MaxPool", "maxPool2d"},
+    {"Range", "fillSequence"},
     {"ReduceMax", "reduceMax"},
     {"ReduceMean", "reduceMean"},
     {"Reshape", "reshape"},
@@ -166,5 +167,36 @@ bool IsSupportedDataType(const int32_t data_type, const WebnnDeviceType device_t
 bool IsValidMultidirectionalBroadcast(std::vector<int64_t>& shape_a,
                                       std::vector<int64_t>& shape_b,
                                       const logging::Logger& logger);
+
+inline Status GetWebNNType(const int32_t type, std::string& operand_type) {
+  switch (type) {
+    case ONNX_NAMESPACE::TensorProto_DataType_BOOL:
+      operand_type = "uint8";
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_FLOAT16:
+      operand_type = "float16";
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_FLOAT:
+      operand_type = "float32";
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_INT32:
+      operand_type = "int32";
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_INT64:
+      operand_type = "int64";
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_UINT32:
+      operand_type = "uint32";
+      break;
+    case ONNX_NAMESPACE::TensorProto_DataType_UINT64:
+      operand_type = "uint64";
+      break;
+    default:
+      return ORT_MAKE_STATUS(ONNXRUNTIME, INVALID_ARGUMENT,
+                             "WebNN has unsupported data type: ", type);
+  }
+  return Status::OK();
+};
+
 }  // namespace webnn
 }  // namespace onnxruntime
